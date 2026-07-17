@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { authCheck } from '@/lib/api';
 import Login from '@/pages/Login';
-import Dashboard from '@/pages/Dashboard';
+import PostStatus from '@/pages/PostStatus';
 
 export default function App() {
-  const [authed, setAuthed] = useState<boolean | null>(null); // null = checking
+  const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Re-verify stored token on mount
     authCheck().then(ok => setAuthed(ok));
   }, []);
 
@@ -19,9 +18,6 @@ export default function App() {
     );
   }
 
-  if (!authed) {
-    return <Login onLogin={() => setAuthed(true)} />;
-  }
-
-  return <Dashboard onLogout={() => setAuthed(false)} />;
+  if (!authed) return <Login onLogin={() => setAuthed(true)} />;
+  return <PostStatus onLogout={() => setAuthed(false)} />;
 }
