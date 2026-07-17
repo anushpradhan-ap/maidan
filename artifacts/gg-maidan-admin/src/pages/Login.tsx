@@ -83,9 +83,7 @@ export default function Login({ onLogin }: Props) {
             </button>
           </form>
 
-          <p className="text-xs text-muted-foreground text-center mt-6">
-            Default password: <code className="font-mono bg-muted px-1 py-0.5 rounded">ggmaidan2024</code>
-          </p>
+
         </div>
       </div>
     </div>
