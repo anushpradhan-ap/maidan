@@ -3,20 +3,42 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: G.G. Maidan Esports Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: tournaments
+    description: Tournament management
+  - name: games
+    description: Game catalog
+  - name: teams
+    description: Team profiles and rankings
+  - name: players
+    description: Player profiles and statistics
+  - name: news
+    description: News and blog posts
+  - name: gallery
+    description: Media gallery
+  - name: sponsors
+    description: Sponsor showcase
+  - name: announcements
+    description: Platform announcements
+  - name: leaderboard
+    description: Rankings and leaderboards
+  - name: live
+    description: Live tournament coverage
+  - name: stats
+    description: Community statistics
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +46,564 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /tournaments:
+    get:
+      operationId: listTournaments
+      tags: [tournaments]
+      summary: List tournaments
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [upcoming, live, completed]
+        - name: gameId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of tournaments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tournament"
+    post:
+      operationId: createTournament
+      tags: [tournaments]
+      summary: Create a tournament
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TournamentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tournament"
+
+  /tournaments/{id}:
+    get:
+      operationId: getTournament
+      tags: [tournaments]
+      summary: Get tournament details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tournament details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentDetail"
+        "404":
+          description: Not found
+
+  /tournaments/{id}/standings:
+    get:
+      operationId: getTournamentStandings
+      tags: [tournaments]
+      summary: Get tournament standings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Standings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Standing"
+
+  /tournaments/{id}/register:
+    post:
+      operationId: registerForTournament
+      tags: [tournaments]
+      summary: Register a team for a tournament
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Registration"
+
+  /games:
+    get:
+      operationId: listGames
+      tags: [games]
+      summary: List supported games
+      responses:
+        "200":
+          description: Game list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Game"
+    post:
+      operationId: createGame
+      tags: [games]
+      summary: Create a game
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+
+  /teams:
+    get:
+      operationId: listTeams
+      tags: [teams]
+      summary: List teams with rankings
+      parameters:
+        - name: gameId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Team list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+    post:
+      operationId: createTeam
+      tags: [teams]
+      summary: Create a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+
+  /teams/{id}:
+    get:
+      operationId: getTeam
+      tags: [teams]
+      summary: Get team profile with members
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamDetail"
+        "404":
+          description: Not found
+
+  /players:
+    get:
+      operationId: listPlayers
+      tags: [players]
+      summary: List players with stats
+      parameters:
+        - name: gameId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: teamId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Player list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Player"
+
+  /players/{id}:
+    get:
+      operationId: getPlayer
+      tags: [players]
+      summary: Get player profile with history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerDetail"
+        "404":
+          description: Not found
+
+  /news:
+    get:
+      operationId: listNews
+      tags: [news]
+      summary: List news and blog posts
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: News list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NewsPost"
+    post:
+      operationId: createNewsPost
+      tags: [news]
+      summary: Create a news post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsPostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsPost"
+
+  /news/{id}:
+    get:
+      operationId: getNewsPost
+      tags: [news]
+      summary: Get news post detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: News post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsPost"
+        "404":
+          description: Not found
+
+  /gallery:
+    get:
+      operationId: listGallery
+      tags: [gallery]
+      summary: List gallery items
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: ["string", "null"]
+            enum: [photo, video, highlight, null]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Gallery items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GalleryItem"
+    post:
+      operationId: createGalleryItem
+      tags: [gallery]
+      summary: Add gallery item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GalleryItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryItem"
+
+  /sponsors:
+    get:
+      operationId: listSponsors
+      tags: [sponsors]
+      summary: List sponsors
+      responses:
+        "200":
+          description: Sponsor list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sponsor"
+    post:
+      operationId: createSponsor
+      tags: [sponsors]
+      summary: Add sponsor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SponsorInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sponsor"
+
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      tags: [announcements]
+      summary: List announcements
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Announcement"
+    post:
+      operationId: createAnnouncement
+      tags: [announcements]
+      summary: Create announcement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [leaderboard]
+      summary: Get leaderboard rankings
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [individual, team]
+            default: individual
+        - name: gameId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
+  /live:
+    get:
+      operationId: getLiveTournaments
+      tags: [live]
+      summary: Get currently live tournaments with match data
+      responses:
+        "200":
+          description: Live tournament data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LiveTournament"
+
+  /live/{tournamentId}/update:
+    post:
+      operationId: postLiveUpdate
+      tags: [live]
+      summary: Post a live match update
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LiveUpdateInput"
+      responses:
+        "201":
+          description: Update posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveUpdate"
+
+  /stats/community:
+    get:
+      operationId: getCommunityStats
+      tags: [stats]
+      summary: Get community-wide statistics summary
+      responses:
+        "200":
+          description: Community stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityStats"
+
+  /stats/featured:
+    get:
+      operationId: getFeaturedContent
+      tags: [stats]
+      summary: Get featured tournaments, players, and news for homepage
+      responses:
+        "200":
+          description: Featured content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeaturedContent"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +614,693 @@ components:
       required:
         - status
 
+    Tournament:
+      type: object
+      required: [id, title, gameName, status, startDate, prizePool, maxTeams, registeredTeams, bannerUrl]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        gameId:
+          type: integer
+        gameName:
+          type: string
+        status:
+          type: string
+          enum: [upcoming, live, completed]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        prizePool:
+          type: string
+        maxTeams:
+          type: integer
+        registeredTeams:
+          type: integer
+        bannerUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+
+    TournamentDetail:
+      type: object
+      required: [id, title, gameName, status, startDate, prizePool, maxTeams, registeredTeams, bannerUrl, rules, schedule, brackets]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        gameId:
+          type: integer
+        gameName:
+          type: string
+        status:
+          type: string
+          enum: [upcoming, live, completed]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        prizePool:
+          type: string
+        maxTeams:
+          type: integer
+        registeredTeams:
+          type: integer
+        bannerUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        rules:
+          type: ["string", "null"]
+        schedule:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleItem"
+        brackets:
+          type: array
+          items:
+            $ref: "#/components/schemas/BracketMatch"
+
+    TournamentInput:
+      type: object
+      required: [title, gameId, startDate, prizePool, maxTeams]
+      properties:
+        title:
+          type: string
+        gameId:
+          type: integer
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        prizePool:
+          type: string
+        maxTeams:
+          type: integer
+        bannerUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        rules:
+          type: ["string", "null"]
+
+    ScheduleItem:
+      type: object
+      required: [id, label, datetime, description]
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        datetime:
+          type: string
+        description:
+          type: ["string", "null"]
+
+    BracketMatch:
+      type: object
+      required: [id, round, team1Name, team2Name, winner, score1, score2]
+      properties:
+        id:
+          type: integer
+        round:
+          type: integer
+        team1Name:
+          type: ["string", "null"]
+        team2Name:
+          type: ["string", "null"]
+        winner:
+          type: ["string", "null"]
+        score1:
+          type: ["integer", "null"]
+        score2:
+          type: ["integer", "null"]
+
+    Standing:
+      type: object
+      required: [rank, teamId, teamName, teamLogoUrl, kills, points, placement]
+      properties:
+        rank:
+          type: integer
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        teamLogoUrl:
+          type: ["string", "null"]
+        kills:
+          type: integer
+        points:
+          type: integer
+        placement:
+          type: integer
+
+    RegistrationInput:
+      type: object
+      required: [teamId]
+      properties:
+        teamId:
+          type: integer
+        playerIds:
+          type: array
+          items:
+            type: integer
+
+    Registration:
+      type: object
+      required: [id, tournamentId, teamId, registeredAt, status]
+      properties:
+        id:
+          type: integer
+        tournamentId:
+          type: integer
+        teamId:
+          type: integer
+        registeredAt:
+          type: string
+        status:
+          type: string
+
+    Game:
+      type: object
+      required: [id, name, slug, logoUrl, activePlayers, activeTournaments]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        coverUrl:
+          type: ["string", "null"]
+        activePlayers:
+          type: integer
+        activeTournaments:
+          type: integer
+        description:
+          type: ["string", "null"]
+
+    GameInput:
+      type: object
+      required: [name, slug]
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        coverUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+
+    Team:
+      type: object
+      required: [id, name, tag, logoUrl, gameId, gameName, wins, losses, points, rank]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        tag:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        gameId:
+          type: integer
+        gameName:
+          type: string
+        wins:
+          type: integer
+        losses:
+          type: integer
+        points:
+          type: integer
+        rank:
+          type: integer
+        memberCount:
+          type: integer
+
+    TeamDetail:
+      type: object
+      required: [id, name, tag, logoUrl, gameId, gameName, wins, losses, points, rank, members, recentMatches]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        tag:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        bannerUrl:
+          type: ["string", "null"]
+        gameId:
+          type: integer
+        gameName:
+          type: string
+        wins:
+          type: integer
+        losses:
+          type: integer
+        points:
+          type: integer
+        rank:
+          type: integer
+        description:
+          type: ["string", "null"]
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/Player"
+        recentMatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchResult"
+
+    TeamInput:
+      type: object
+      required: [name, tag, gameId]
+      properties:
+        name:
+          type: string
+        tag:
+          type: string
+        gameId:
+          type: integer
+        logoUrl:
+          type: ["string", "null"]
+        bannerUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+
+    Player:
+      type: object
+      required: [id, username, avatarUrl, gameId, gameName, kills, deaths, assists, tournamentWins, rank]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        fullName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        gameId:
+          type: integer
+        gameName:
+          type: string
+        teamId:
+          type: ["integer", "null"]
+        teamName:
+          type: ["string", "null"]
+        kills:
+          type: integer
+        deaths:
+          type: integer
+        assists:
+          type: integer
+        tournamentWins:
+          type: integer
+        rank:
+          type: integer
+        country:
+          type: ["string", "null"]
+        role:
+          type: ["string", "null"]
+
+    PlayerDetail:
+      type: object
+      required: [id, username, avatarUrl, gameId, gameName, kills, deaths, assists, tournamentWins, rank, matchHistory, badges]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        fullName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        gameId:
+          type: integer
+        gameName:
+          type: string
+        teamId:
+          type: ["integer", "null"]
+        teamName:
+          type: ["string", "null"]
+        kills:
+          type: integer
+        deaths:
+          type: integer
+        assists:
+          type: integer
+        tournamentWins:
+          type: integer
+        rank:
+          type: integer
+        country:
+          type: ["string", "null"]
+        role:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
+        matchHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchResult"
+        badges:
+          type: array
+          items:
+            $ref: "#/components/schemas/Badge"
+
+    MatchResult:
+      type: object
+      required: [id, tournamentName, date, result, kills, placement]
+      properties:
+        id:
+          type: integer
+        tournamentName:
+          type: string
+        date:
+          type: string
+        result:
+          type: string
+          enum: [win, loss, draw]
+        kills:
+          type: integer
+        placement:
+          type: ["integer", "null"]
+
+    Badge:
+      type: object
+      required: [id, name, description, iconUrl, earnedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        iconUrl:
+          type: ["string", "null"]
+        earnedAt:
+          type: string
+
+    NewsPost:
+      type: object
+      required: [id, title, slug, excerpt, content, category, coverUrl, author, publishedAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        excerpt:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+          enum: [tournament, gaming, recap, announcement, patch]
+        coverUrl:
+          type: ["string", "null"]
+        author:
+          type: string
+        publishedAt:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    NewsPostInput:
+      type: object
+      required: [title, slug, excerpt, content, category, author]
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        excerpt:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+        coverUrl:
+          type: ["string", "null"]
+        author:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    GalleryItem:
+      type: object
+      required: [id, title, type, url, thumbnailUrl, uploadedAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        type:
+          type: string
+          enum: [photo, video, highlight]
+        url:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        tournamentId:
+          type: ["integer", "null"]
+        tournamentName:
+          type: ["string", "null"]
+        uploadedAt:
+          type: string
+
+    GalleryItemInput:
+      type: object
+      required: [title, type, url]
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        tournamentId:
+          type: ["integer", "null"]
+
+    Sponsor:
+      type: object
+      required: [id, name, logoUrl, tier, websiteUrl]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        logoUrl:
+          type: string
+        tier:
+          type: string
+          enum: [platinum, gold, silver, bronze]
+        websiteUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+
+    SponsorInput:
+      type: object
+      required: [name, logoUrl, tier]
+      properties:
+        name:
+          type: string
+        logoUrl:
+          type: string
+        tier:
+          type: string
+        websiteUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+
+    Announcement:
+      type: object
+      required: [id, title, content, type, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+          enum: [info, warning, success, event]
+        createdAt:
+          type: string
+        expiresAt:
+          type: ["string", "null"]
+
+    AnnouncementInput:
+      type: object
+      required: [title, content, type]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+        expiresAt:
+          type: ["string", "null"]
+
+    LeaderboardEntry:
+      type: object
+      required: [rank, entityId, entityName, entityType, avatarUrl, points, kills, wins]
+      properties:
+        rank:
+          type: integer
+        entityId:
+          type: integer
+        entityName:
+          type: string
+        entityType:
+          type: string
+          enum: [player, team]
+        avatarUrl:
+          type: ["string", "null"]
+        gameName:
+          type: ["string", "null"]
+        points:
+          type: integer
+        kills:
+          type: integer
+        wins:
+          type: integer
+        country:
+          type: ["string", "null"]
+
+    LiveTournament:
+      type: object
+      required: [id, title, gameName, currentRound, totalRounds, teamsAlive, startedAt, standings, recentUpdates]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        gameName:
+          type: string
+        currentRound:
+          type: integer
+        totalRounds:
+          type: integer
+        teamsAlive:
+          type: integer
+        topFragger:
+          type: ["string", "null"]
+        topFraggerKills:
+          type: ["integer", "null"]
+        currentZone:
+          type: ["string", "null"]
+        streamUrl:
+          type: ["string", "null"]
+        startedAt:
+          type: string
+        standings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Standing"
+        recentUpdates:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveUpdate"
+
+    LiveUpdate:
+      type: object
+      required: [id, tournamentId, message, type, createdAt]
+      properties:
+        id:
+          type: integer
+        tournamentId:
+          type: integer
+        message:
+          type: string
+        type:
+          type: string
+          enum: [kill, zone, round_start, round_end, event]
+        teamName:
+          type: ["string", "null"]
+        playerName:
+          type: ["string", "null"]
+        kills:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    LiveUpdateInput:
+      type: object
+      required: [message, type]
+      properties:
+        message:
+          type: string
+        type:
+          type: string
+        teamName:
+          type: ["string", "null"]
+        playerName:
+          type: ["string", "null"]
+        kills:
+          type: ["integer", "null"]
+
+    CommunityStats:
+      type: object
+      required: [totalPlayers, totalTeams, totalTournaments, totalPrizeDistributed, activeTournaments, countriesRepresented]
+      properties:
+        totalPlayers:
+          type: integer
+        totalTeams:
+          type: integer
+        totalTournaments:
+          type: integer
+        totalPrizeDistributed:
+          type: string
+        activeTournaments:
+          type: integer
+        countriesRepresented:
+          type: integer
+
+    FeaturedContent:
+      type: object
+      required: [featuredTournaments, liveTournaments, topPlayers, latestNews, upcomingHighlight]
+      properties:
+        featuredTournaments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tournament"
+        liveTournaments:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveTournament"
+        topPlayers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Player"
+        latestNews:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewsPost"
+        upcomingHighlight:
+          nullable: true
+          $ref: "#/components/schemas/Tournament"

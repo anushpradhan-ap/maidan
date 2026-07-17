@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "G.G. Maidan"
+version = "1.0.0"
+id = "artifacts/gg-maidan"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22493
+
+[services.development]
+run = "pnpm --filter @workspace/gg-maidan run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gg-maidan", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/gg-maidan/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22493"
+BASE_PATH = "/"

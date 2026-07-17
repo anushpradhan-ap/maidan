@@ -1,0 +1,232 @@
+Project Brief: G.G. Maidan Official Website
+
+Project Title:
+G.G. Maidan - Nepal's Ultimate Esports Tournament Platform
+
+Project Overview
+
+Develop a modern, responsive, and fully functional website for G.G. Maidan E-sports Pvt. Ltd. inspired by the company's existing social media presence, Android application, and tournament ecosystem. The website should serve as the central hub for esports tournaments, player registration, live match updates, community engagement, and tournament management. The goal is to provide a professional experience for players, teams, organizers, sponsors, and spectators. Existing references indicate G.G. Maidan already operates esports tournaments and has a mobile application.
+
+Website Goals
+Promote G.G. Maidan as Nepal's leading esports organizer.
+Allow users to browse upcoming tournaments.
+Enable online tournament registration.
+Display live tournament standings.
+Publish announcements and news.
+Showcase sponsors and partners.
+Integrate with the existing mobile application.
+Provide real-time tournament updates.
+Create a strong esports community.
+Main Pages
+Home
+Hero banner with upcoming tournaments
+Featured games
+Latest announcements
+Live tournament widget
+Sponsors
+Download App section
+Community statistics
+About Us
+Company Story
+Mission
+Vision
+Team Members
+Achievements
+Tournaments
+Upcoming
+Live
+Completed
+Tournament details
+Prize Pool
+Rules
+Brackets
+Schedule
+Registration button
+Games
+
+Examples:
+
+PUBG Mobile
+Free Fire
+Valorant
+Mobile Legends
+FIFA
+Clash Royale
+Other esports titles
+Teams
+Team Profiles
+Team Rankings
+Team Members
+Win/Loss Records
+Player Profiles
+Player Statistics
+Match History
+Achievements
+Badges
+Rankings
+Leaderboards
+Individual Rankings
+Team Rankings
+MVP Players
+Most Kills
+Highest Points
+News & Blogs
+Tournament News
+Gaming News
+Event Recaps
+Patch Notes
+Announcements
+Gallery
+Tournament Photos
+Videos
+Highlights
+Sponsors
+
+Sponsor showcase with logos and links.
+
+Contact
+Contact Form
+Google Map
+Office Details
+Social Media
+Live Tournament Status Website
+
+Create a dedicated connected website (or subdomain like live.ggmaidan.com) for real-time tournament coverage.
+
+Features
+Live Match Feed
+Live Scoreboard
+Match Timer
+Current Match Status
+Team Standings
+Kill Feed
+MVP Tracking
+Match Schedule
+Stream Embed (YouTube/Facebook)
+Automatic Refresh
+Admin Live Dashboard
+
+Example Live Feed:
+
+Round 5 Started
+
+Team Alpha - 25 pts
+Team Bravo - 18 pts
+Team Delta - 14 pts
+
+Top Fragger:
+Player X (8 kills)
+
+Remaining Teams:
+14
+
+Zone:
+Military Base
+Admin Dashboard
+
+Admins should be able to:
+
+Create tournaments
+Edit tournaments
+Publish announcements
+Upload banners
+Manage teams
+Manage players
+Post live updates
+Update leaderboards
+Upload gallery images
+Moderate users
+Manage sponsors
+User Dashboard
+
+Players can:
+
+Register
+Join tournaments
+Create teams
+Invite teammates
+View match history
+Download certificates
+Check rankings
+Receive notifications
+Authentication
+Google Login
+Discord Login
+Facebook Login
+Email Login
+OTP Verification
+Notifications
+Tournament reminders
+Match starting alerts
+Registration confirmation
+Live score notifications
+Prize announcements
+Technology Stack
+Frontend
+Next.js
+React
+Tailwind CSS
+Framer Motion
+Backend
+Node.js
+Express.js
+Database
+PostgreSQL
+Prisma ORM
+Authentication
+JWT
+OAuth
+Storage
+Cloudinary
+AWS S3
+Hosting
+Vercel (Frontend)
+Railway or Render (Backend)
+PostgreSQL Database
+Real-Time Features
+
+Use Socket.IO or Firebase Realtime Database for:
+
+Live Scores
+Live Match Updates
+Live Chat
+Notifications
+Tournament Standings
+Additional Features
+Dark/Light Mode
+Responsive Design
+SEO Optimization
+Fast Loading
+PWA Support
+Social Sharing
+Tournament Countdown
+Match Calendar
+Player Badges
+Discord Integration
+YouTube Live Integration
+Facebook Live Integration
+UI Style
+
+Design should feel premium and esports-focused with:
+
+Black, Purple, Blue, and Neon accents
+Animated gradients
+Glassmorphism cards
+Smooth transitions
+Gaming-inspired typography
+Interactive tournament brackets
+Modern dashboards
+Future Features
+AI Match Predictions
+AI Tournament Assistant
+Fantasy Esports League
+NFT/Badge Collection
+Mobile Push Notifications
+Streaming Analytics
+Automated Bracket Generation
+Prize Distribution Dashboard
+Anti-cheat Reporting
+Team Recruitment Portal
+Project Vision
+
+Build G.G. Maidan into Nepal's premier esports ecosystem—a unified platform where players compete, organizers manage tournaments seamlessly, and fans stay connected through real-time match updates, live standings, and an engaging gaming community.
