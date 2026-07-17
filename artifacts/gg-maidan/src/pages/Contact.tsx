@@ -1,115 +1,160 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Mail, MapPin, Phone } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { Mail, Phone, MapPin, Send, CheckCircle2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const CONTACT_INFO = [
+  { icon: Mail, label: 'Email', value: 'contact@ggmaidan.com', href: 'mailto:contact@ggmaidan.com' },
+  { icon: Phone, label: 'Phone', value: '+977-1-4GGMAIDAN', href: 'tel:+97714664243' },
+  { icon: MapPin, label: 'Address', value: 'Kathmandu, Nepal', href: 'https://maps.google.com/?q=Kathmandu,Nepal' },
+];
+
+const SUBJECTS = [
+  'Tournament Registration',
+  'Sponsorship Inquiry',
+  'Team Registration Help',
+  'Technical Support',
+  'Media & Press',
+  'Other',
+];
 
 export default function Contact() {
-  const { toast } = useToast();
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    toast({
-      title: "Message Sent",
-      description: "We've received your inquiry and will get back to you soon.",
-    });
-    (e.target as HTMLFormElement).reset();
-  };
+    setLoading(true);
+    setError('');
+    try {
+      // Simulate submission (replace with real endpoint if available)
+      await new Promise(r => setTimeout(r, 1200));
+      setSent(true);
+    } catch {
+      setError('Something went wrong. Please try again or email us directly.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const f = (key: keyof typeof form) => ({
+    value: form[key],
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setForm(p => ({ ...p, [key]: e.target.value })),
+  });
+
+  const inputClass = "w-full bg-card/60 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors";
 
   return (
-    <div className="container mx-auto px-4 py-16 max-w-6xl">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-5xl font-display font-black uppercase tracking-tight mb-4">
-          Contact Us
-        </h1>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Have a question about a tournament? Want to partner with us? Drop us a line.
-        </p>
-      </div>
+    <div className="min-h-screen py-20 px-4">
+      <div className="container mx-auto max-w-6xl">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
+          <p className="text-primary font-mono text-sm uppercase tracking-widest mb-3">Get in Touch</p>
+          <h1 className="text-5xl md:text-6xl font-display font-black uppercase tracking-tight text-white mb-6">
+            Contact Us
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+            Have a question about tournaments, partnerships, or anything else? We're here to help.
+          </p>
+        </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Contact Form */}
-        <Card className="glass-card border-white/10">
-          <CardContent className="p-8">
-            <h3 className="text-2xl font-display font-bold uppercase mb-6 text-white">Send a Message</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">First Name</label>
-                  <Input required placeholder="John" className="bg-black/50 border-white/10 focus-visible:ring-primary" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Last Name</label>
-                  <Input required placeholder="Doe" className="bg-black/50 border-white/10 focus-visible:ring-primary" />
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+          {/* Left sidebar */}
+          <div className="lg:col-span-2 space-y-6">
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
+              <h2 className="font-display uppercase text-xl font-bold mb-6 text-white">Reach Us</h2>
+              <div className="space-y-4">
+                {CONTACT_INFO.map(({ icon: Icon, label, value, href }) => (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-start gap-4 p-4 rounded-xl bg-card/60 border border-white/10 hover:border-primary/30 hover:bg-white/5 transition-all group">
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 group-hover:bg-primary/30 transition-colors">
+                      <Icon className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>
+                      <p className="text-white font-medium">{value}</p>
+                    </div>
+                  </a>
+                ))}
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Email</label>
-                <Input required type="email" placeholder="john@team.com" className="bg-black/50 border-white/10 focus-visible:ring-primary" />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Subject</label>
-                <Input required placeholder="Tournament Inquiry" className="bg-black/50 border-white/10 focus-visible:ring-primary" />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Message</label>
-                <Textarea required placeholder="How can we help you?" className="min-h-[150px] bg-black/50 border-white/10 focus-visible:ring-primary" />
-              </div>
+            </motion.div>
 
-              <Button type="submit" className="w-full h-12 mt-4 font-display uppercase tracking-widest font-bold bg-primary hover:bg-primary/90 text-white">
-                Send Message
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+              className="p-6 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
+              <h3 className="font-display uppercase font-bold text-white mb-2">Join Our Community</h3>
+              <p className="text-sm text-muted-foreground mb-4">Follow us for live updates, results, and news.</p>
+              <div className="flex gap-3">
+                {['Facebook', 'Instagram', 'Discord', 'YouTube'].map(s => (
+                  <span key={s} className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs text-white cursor-pointer transition-colors">{s}</span>
+                ))}
+              </div>
+            </motion.div>
+          </div>
 
-        {/* Contact Info */}
-        <div className="space-y-8">
-          <Card className="glass-card border-white/5 bg-white/5">
-            <CardContent className="p-6 flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                <Mail className="w-6 h-6 text-primary" />
+          {/* Form */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
+            className="lg:col-span-3 bg-card/60 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+            {sent ? (
+              <div className="flex flex-col items-center justify-center h-full gap-6 py-10">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
+                  <CheckCircle2 className="w-20 h-20 text-emerald-400" />
+                </motion.div>
+                <h3 className="font-display uppercase text-2xl font-bold text-white">Message Sent!</h3>
+                <p className="text-muted-foreground text-center max-w-sm">
+                  Thanks for reaching out. Our team will get back to you within 24 hours.
+                </p>
+                <button onClick={() => { setSent(false); setForm({ name: '', email: '', subject: '', message: '' }); }}
+                  className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-colors">
+                  Send Another
+                </button>
               </div>
-              <div>
-                <h4 className="font-display font-bold uppercase mb-1">Email Us</h4>
-                <p className="text-muted-foreground text-sm mb-2">For general inquiries and support.</p>
-                <a href="mailto:support@ggmaidan.com" className="text-white hover:text-primary font-mono">support@ggmaidan.com</a>
-              </div>
-            </CardContent>
-          </Card>
+            ) : (
+              <>
+                <h2 className="font-display uppercase text-xl font-bold text-white mb-6">Send a Message</h2>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-2">Your Name *</label>
+                      <input type="text" required {...f('name')} placeholder="Arjun Thapa" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-2">Email *</label>
+                      <input type="email" required {...f('email')} placeholder="you@example.com" className={inputClass} />
+                    </div>
+                  </div>
 
-          <Card className="glass-card border-white/5 bg-white/5">
-            <CardContent className="p-6 flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
-                <Phone className="w-6 h-6 text-secondary" />
-              </div>
-              <div>
-                <h4 className="font-display font-bold uppercase mb-1">Call Us</h4>
-                <p className="text-muted-foreground text-sm mb-2">Mon-Fri from 10am to 6pm NPT.</p>
-                <a href="tel:+9779800000000" className="text-white hover:text-secondary font-mono">+977 980-000-0000</a>
-              </div>
-            </CardContent>
-          </Card>
+                  <div>
+                    <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-2">Subject *</label>
+                    <select required {...f('subject')} className={inputClass}>
+                      <option value="">Select a subject…</option>
+                      {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
 
-          <Card className="glass-card border-white/5 bg-white/5">
-            <CardContent className="p-6 flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                <MapPin className="w-6 h-6 text-emerald-500" />
-              </div>
-              <div>
-                <h4 className="font-display font-bold uppercase mb-1">HQ</h4>
-                <p className="text-muted-foreground text-sm mb-2">Come visit our local office.</p>
-                <address className="text-white not-italic text-sm">
-                  Kathmandu, Nepal<br />
-                  Bagmati Province, 44600
-                </address>
-              </div>
-            </CardContent>
-          </Card>
+                  <div>
+                    <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-2">Message *</label>
+                    <textarea required {...f('message')} rows={6} placeholder="Tell us how we can help…"
+                      className={`${inputClass} resize-none`} />
+                  </div>
+
+                  {error && (
+                    <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">{error}</div>
+                  )}
+
+                  <button type="submit" disabled={loading}
+                    className="w-full h-12 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-display uppercase tracking-widest font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
+                    {loading ? (
+                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
+                    ) : (
+                      <><Send className="w-4 h-4" /> Send Message</>
+                    )}
+                  </button>
+                </form>
+              </>
+            )}
+          </motion.div>
         </div>
       </div>
     </div>

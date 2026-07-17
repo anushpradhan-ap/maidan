@@ -11,10 +11,12 @@ import announcementsRouter from "./announcements";
 import leaderboardRouter from "./leaderboard";
 import liveRouter from "./live";
 import statsRouter from "./stats";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(adminRouter);
 router.use(tournamentsRouter);
 router.use(gamesRouter);
 router.use(teamsRouter);

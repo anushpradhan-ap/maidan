@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/gg-maidan-admin/"
+title = "GG Maidan Admin"
+version = "1.0.0"
+id = "artifacts/gg-maidan-admin"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/gg-maidan-admin/" ]
+localPort = 23011
+
+[services.development]
+run = "pnpm --filter @workspace/gg-maidan-admin run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gg-maidan-admin", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/gg-maidan-admin/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23011"
+BASE_PATH = "/gg-maidan-admin/"
