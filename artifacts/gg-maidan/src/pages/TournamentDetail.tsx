@@ -35,7 +35,8 @@ export default function TournamentDetail() {
     setRegLoading(true);
     setRegError('');
     try {
-      const res = await fetch(`/api/tournaments/${id}/register`, {
+      const apiBase = import.meta.env.VITE_API_URL ?? '';
+      const res = await fetch(`${apiBase}/api/tournaments/${id}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teamId: Number(selectedTeam) }),

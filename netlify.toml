@@ -1,0 +1,16 @@
+# Netlify config for the main GG Maidan website (artifacts/gg-maidan)
+# In the Netlify dashboard set:
+#   Build command  : (leave blank — this file sets it)
+#   Publish dir    : (leave blank — this file sets it)
+#   Base directory : (leave blank — use repo root)
+# Add environment variable: VITE_API_URL = https://<your-render-service>.onrender.com
+
+[build]
+  command = "pnpm install && pnpm --filter @workspace/gg-maidan run build"
+  publish = "artifacts/gg-maidan/dist"
+
+# Route all paths to index.html so the React router works
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200

@@ -1,4 +1,6 @@
-const BASE = '/api';
+// When deployed separately (e.g. Netlify), VITE_API_URL points to the remote API server.
+// In dev (Replit), it is unset and calls stay root-relative (/api/...).
+const BASE = (import.meta.env.VITE_API_URL ?? '') + '/api';
 
 function getToken(): string {
   return localStorage.getItem('gg_admin_token') ?? '';
