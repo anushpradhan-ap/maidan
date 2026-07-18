@@ -39,8 +39,14 @@ function timeAgo(iso: string) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+const DISMISSED_KEY = "ggm_dismissed_ann";
+
 function AnnouncementPost() {
-  const { data } = useListAnnouncements({ limit: 1 });
+  // Poll every 15 s so new announcements posted from admin appear automatically
+  const { data } = useListAnnouncements(
+    { limit: 1 },
+    { query: { refetchInterval: 15_000 } }
+  );
   const [dismissed, setDismissed] = useState(false);
   const [visible, setVisible] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -51,11 +57,19 @@ function AnnouncementPost() {
   useEffect(() => {
     if (!latest) return;
     if (latest.id === seenId.current) return;
+
+    // Check if this announcement was already dismissed (persisted in localStorage)
+    const dismissedId = Number(localStorage.getItem(DISMISSED_KEY) ?? 0);
+    if (latest.id === dismissedId) {
+      seenId.current = latest.id;
+      return; // user already dismissed this one — don't show again
+    }
+
     seenId.current = latest.id;
     setDismissed(false);
     setLiked(false);
     // Small delay so it feels like it "arrives"
-    const t = setTimeout(() => setVisible(true), 300);
+    const t = setTimeout(() => setVisible(true), 400);
     return () => clearTimeout(t);
   }, [latest?.id]);
 
@@ -64,6 +78,8 @@ function AnnouncementPost() {
   const meta = TYPE_META[latest.type] ?? TYPE_META.info;
 
   function dismiss() {
+    // Persist so the same announcement doesn't re-appear after page refresh
+    if (latest) localStorage.setItem(DISMISSED_KEY, String(latest.id));
     setVisible(false);
     setTimeout(() => setDismissed(true), 350);
   }
