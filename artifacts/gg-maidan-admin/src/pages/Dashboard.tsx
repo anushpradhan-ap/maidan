@@ -45,9 +45,8 @@ export default function Dashboard({ onLogout }: Props) {
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-56 bg-card border-r border-border flex flex-col transition-transform duration-200 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo */}
-        <div className="h-14 flex items-center gap-2.5 px-4 border-b border-border shrink-0">
-          <div className="w-7 h-7 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center text-sm">🎮</div>
-          <span className="font-bold text-foreground text-sm">GG Maidan</span>
+        <div className="h-14 flex items-center px-4 border-b border-border shrink-0">
+          <img src="/gg-maidan-admin/logo.png" alt="G.G. Maidan" className="h-8 w-auto object-contain" />
         </div>
 
         {/* Nav */}

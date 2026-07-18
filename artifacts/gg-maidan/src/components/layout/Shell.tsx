@@ -2,6 +2,8 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Trophy, Gamepad2, Users, Flame, LayoutDashboard, Radio, X } from "lucide-react";
+
+const BASE = import.meta.env.BASE_URL;
 import { useListAnnouncements } from "@workspace/api-client-react";
 
 function NavLink({ href, icon: Icon, children, isActive }: { href: string, icon: any, children: ReactNode, isActive: boolean }) {
@@ -77,13 +79,12 @@ export function Shell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/">
-            <span className="flex items-center gap-2 cursor-pointer group">
-              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] transition-all">
-                <Gamepad2 className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-display font-bold text-xl uppercase tracking-widest text-foreground">
-                G.G. Maidan
-              </span>
+            <span className="flex items-center cursor-pointer group">
+              <img
+                src={`${BASE}logo.png`}
+                alt="G.G. Maidan"
+                className="h-10 w-auto object-contain group-hover:drop-shadow-[0_0_10px_rgba(139,92,246,0.6)] transition-all duration-300"
+              />
             </span>
           </Link>
 
@@ -124,13 +125,8 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
               <Link href="/">
-                <span className="flex items-center gap-2 cursor-pointer">
-                  <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <Gamepad2 className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-display font-bold text-xl uppercase tracking-widest text-foreground">
-                    G.G. Maidan
-                  </span>
+                <span className="flex items-center cursor-pointer">
+                  <img src={`${BASE}logo.png`} alt="G.G. Maidan" className="h-9 w-auto object-contain" />
                 </span>
               </Link>
               <p className="text-muted-foreground text-sm leading-relaxed">
