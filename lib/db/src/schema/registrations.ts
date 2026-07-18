@@ -6,8 +6,8 @@ import { teamsTable } from "./teams";
 
 export const registrationsTable = pgTable("registrations", {
   id: serial("id").primaryKey(),
-  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id),
-  teamId: integer("team_id").notNull().references(() => teamsTable.id),
+  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id, { onDelete: "cascade" }),
+  teamId: integer("team_id").notNull().references(() => teamsTable.id, { onDelete: "cascade" }),
   status: text("status").notNull().default("confirmed"),
   registeredAt: timestamp("registered_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

@@ -5,7 +5,7 @@ import { tournamentsTable } from "./tournaments";
 
 export const scheduleItemsTable = pgTable("schedule_items", {
   id: serial("id").primaryKey(),
-  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id),
+  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id, { onDelete: "cascade" }),
   label: text("label").notNull(),
   datetime: text("datetime").notNull(),
   description: text("description"),

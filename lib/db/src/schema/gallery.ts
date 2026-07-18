@@ -9,7 +9,7 @@ export const galleryTable = pgTable("gallery", {
   type: text("type").notNull().default("photo"), // photo | video | highlight
   url: text("url").notNull(),
   thumbnailUrl: text("thumbnail_url"),
-  tournamentId: integer("tournament_id").references(() => tournamentsTable.id),
+  tournamentId: integer("tournament_id").references(() => tournamentsTable.id, { onDelete: "set null" }),
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

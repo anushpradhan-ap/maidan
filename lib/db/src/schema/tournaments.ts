@@ -6,7 +6,7 @@ import { gamesTable } from "./games";
 export const tournamentsTable = pgTable("tournaments", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  gameId: integer("game_id").notNull().references(() => gamesTable.id),
+  gameId: integer("game_id").notNull().references(() => gamesTable.id, { onDelete: "cascade" }),
   status: text("status").notNull().default("upcoming"), // upcoming | live | completed
   startDate: text("start_date").notNull(),
   endDate: text("end_date"),

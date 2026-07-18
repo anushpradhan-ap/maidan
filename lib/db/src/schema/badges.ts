@@ -5,7 +5,7 @@ import { playersTable } from "./players";
 
 export const badgesTable = pgTable("badges", {
   id: serial("id").primaryKey(),
-  playerId: integer("player_id").notNull().references(() => playersTable.id),
+  playerId: integer("player_id").notNull().references(() => playersTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description").notNull(),
   iconUrl: text("icon_url"),

@@ -5,7 +5,7 @@ import { tournamentsTable } from "./tournaments";
 
 export const bracketsTable = pgTable("brackets", {
   id: serial("id").primaryKey(),
-  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id),
+  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id, { onDelete: "cascade" }),
   round: integer("round").notNull(),
   team1Name: text("team1_name"),
   team2Name: text("team2_name"),

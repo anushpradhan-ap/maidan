@@ -5,7 +5,7 @@ import { tournamentsTable } from "./tournaments";
 
 export const liveUpdatesTable = pgTable("live_updates", {
   id: serial("id").primaryKey(),
-  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id),
+  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id, { onDelete: "cascade" }),
   message: text("message").notNull(),
   type: text("type").notNull().default("event"), // kill | zone | round_start | round_end | event
   teamName: text("team_name"),

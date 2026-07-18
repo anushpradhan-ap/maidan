@@ -9,7 +9,7 @@ export const teamsTable = pgTable("teams", {
   tag: text("tag").notNull(),
   logoUrl: text("logo_url"),
   bannerUrl: text("banner_url"),
-  gameId: integer("game_id").notNull().references(() => gamesTable.id),
+  gameId: integer("game_id").notNull().references(() => gamesTable.id, { onDelete: "cascade" }),
   wins: integer("wins").notNull().default(0),
   losses: integer("losses").notNull().default(0),
   points: integer("points").notNull().default(0),

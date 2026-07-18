@@ -6,8 +6,8 @@ import { teamsTable } from "./teams";
 
 export const standingsTable = pgTable("standings", {
   id: serial("id").primaryKey(),
-  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id),
-  teamId: integer("team_id").notNull().references(() => teamsTable.id),
+  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id, { onDelete: "cascade" }),
+  teamId: integer("team_id").notNull().references(() => teamsTable.id, { onDelete: "cascade" }),
   rank: integer("rank").notNull().default(0),
   kills: integer("kills").notNull().default(0),
   points: integer("points").notNull().default(0),

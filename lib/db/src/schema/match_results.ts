@@ -7,9 +7,9 @@ import { playersTable } from "./players";
 
 export const matchResultsTable = pgTable("match_results", {
   id: serial("id").primaryKey(),
-  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id),
-  teamId: integer("team_id").references(() => teamsTable.id),
-  playerId: integer("player_id").references(() => playersTable.id),
+  tournamentId: integer("tournament_id").notNull().references(() => tournamentsTable.id, { onDelete: "cascade" }),
+  teamId: integer("team_id").references(() => teamsTable.id, { onDelete: "set null" }),
+  playerId: integer("player_id").references(() => playersTable.id, { onDelete: "set null" }),
   result: text("result").notNull().default("loss"), // win | loss | draw
   kills: integer("kills").notNull().default(0),
   placement: integer("placement"),
