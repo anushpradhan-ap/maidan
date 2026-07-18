@@ -1,6 +1,6 @@
 [build]
 command = "pnpm install && pnpm --filter @workspace/gg-maidan-admin run build"
-publish = "artifacts/gg-maidan-admin/dist"
+publish = "artifacts/gg-maidan-admin/dist/public"
 
 [[redirects]]
 from = "/*"
