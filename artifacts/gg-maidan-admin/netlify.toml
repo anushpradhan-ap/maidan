@@ -1,0 +1,13 @@
+# Netlify config for the GG Maidan Admin panel
+# In the Netlify dashboard for this site, set Base directory to: artifacts/gg-maidan-admin
+# Then this file will be used automatically.
+
+[build]
+  command = "cd ../.. && pnpm install && pnpm --filter @workspace/gg-maidan-admin run build"
+  publish = "dist"
+
+# Route all paths to index.html so the React router works
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200
