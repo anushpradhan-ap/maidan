@@ -111,6 +111,9 @@ router.patch("/admin/tournaments/:id", async (req, res) => {
 router.delete("/admin/tournaments/:id", async (req, res) => {
   const id = Number(req.params["id"]);
   if (!id) return void res.status(400).json({ error: "Invalid id" });
+  // Remove child records that reference this tournament first
+  await db.delete(liveUpdatesTable).where(eq(liveUpdatesTable.tournamentId, id));
+  await db.delete(standingsTable).where(eq(standingsTable.tournamentId, id));
   await db.delete(tournamentsTable).where(eq(tournamentsTable.id, id));
   return void res.status(204).send();
 });
@@ -204,6 +207,18 @@ router.post("/admin/games", async (req, res) => {
 router.delete("/admin/games/:id", async (req, res) => {
   const id = Number(req.params["id"]);
   if (!id) return void res.status(400).json({ error: "Invalid id" });
+  // Delete in FK dependency order: players → standings → live updates → teams → tournaments → game
+  await db.delete(playersTable).where(eq(playersTable.gameId, id));
+  const teams = await db.select({ id: teamsTable.id }).from(teamsTable).where(eq(teamsTable.gameId, id));
+  for (const t of teams) {
+    await db.delete(teamsTable).where(eq(teamsTable.id, t.id));
+  }
+  const tours = await db.select({ id: tournamentsTable.id }).from(tournamentsTable).where(eq(tournamentsTable.gameId, id));
+  for (const t of tours) {
+    await db.delete(liveUpdatesTable).where(eq(liveUpdatesTable.tournamentId, t.id));
+    await db.delete(standingsTable).where(eq(standingsTable.tournamentId, t.id));
+    await db.delete(tournamentsTable).where(eq(tournamentsTable.id, t.id));
+  }
   await db.delete(gamesTable).where(eq(gamesTable.id, id));
   return void res.status(204).send();
 });
@@ -245,6 +260,8 @@ router.post("/admin/teams", async (req, res) => {
 router.delete("/admin/teams/:id", async (req, res) => {
   const id = Number(req.params["id"]);
   if (!id) return void res.status(400).json({ error: "Invalid id" });
+  // Unlink players from this team (keep players, just remove team assignment)
+  await db.update(playersTable).set({ teamId: null }).where(eq(playersTable.teamId, id));
   await db.delete(teamsTable).where(eq(teamsTable.id, id));
   return void res.status(204).send();
 });
