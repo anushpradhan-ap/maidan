@@ -70,18 +70,19 @@ router.post("/admin/tournaments", async (req, res) => {
   if (!title || !gameId || !startDate || !prizePool || !maxTeams) {
     return void res.status(400).json({ error: "title, gameId, startDate, prizePool, maxTeams required" });
   }
-  const [row] = await db.insert(tournamentsTable).values({
+  const values: Record<string, unknown> = {
     title,
     gameId: Number(gameId),
     startDate,
-    endDate: endDate || null,
     prizePool,
     maxTeams: Number(maxTeams),
-    totalRounds: totalRounds ? Number(totalRounds) : null,
-    description: description || null,
-    rules: rules || null,
     status: "upcoming",
-  }).returning();
+  };
+  if (endDate) values["endDate"] = endDate;
+  if (totalRounds) values["totalRounds"] = Number(totalRounds);
+  if (description) values["description"] = description;
+  if (rules) values["rules"] = rules;
+  const [row] = await db.insert(tournamentsTable).values(values as Parameters<typeof db.insert>[0]["values"] & object).returning();
   return void res.status(201).json(row);
 });
 
@@ -186,7 +187,16 @@ router.get("/admin/games", async (_req, res) => {
 router.post("/admin/games", async (req, res) => {
   const { name, logoUrl, description } = req.body;
   if (!name) return void res.status(400).json({ error: "name required" });
-  const slug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const baseSlug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  // Ensure slug uniqueness by appending a suffix if needed
+  let slug = baseSlug;
+  const existing = await db.select({ slug: gamesTable.slug }).from(gamesTable);
+  const slugs = new Set(existing.map(r => r.slug));
+  if (slugs.has(slug)) {
+    let i = 2;
+    while (slugs.has(`${baseSlug}-${i}`)) i++;
+    slug = `${baseSlug}-${i}`;
+  }
   const [row] = await db.insert(gamesTable).values({ name, slug, logoUrl: logoUrl || null, description: description || null }).returning();
   return void res.status(201).json(row);
 });
@@ -352,12 +362,13 @@ router.get("/admin/sponsors", async (_req, res) => {
 });
 
 router.post("/admin/sponsors", async (req, res) => {
-  const { name, logoUrl, website, tier, description } = req.body;
+  const { name, logoUrl, websiteUrl, website, tier, description } = req.body;
   if (!name || !tier) return void res.status(400).json({ error: "name, tier required" });
   const [row] = await db.insert(sponsorsTable).values({
-    name, tier,
-    logoUrl: logoUrl || null,
-    website: website || null,
+    name,
+    tier,
+    logoUrl: logoUrl || "",          // NOT NULL in DB — empty string when no logo provided
+    websiteUrl: websiteUrl || website || null,
     description: description || null,
   }).returning();
   return void res.status(201).json(row);
