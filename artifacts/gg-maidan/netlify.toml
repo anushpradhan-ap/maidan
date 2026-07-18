@@ -1,0 +1,8 @@
+[build]
+command = "pnpm install && pnpm --filter @workspace/gg-maidan run build"
+publish = "artifacts/gg-maidan/dist/public"
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
