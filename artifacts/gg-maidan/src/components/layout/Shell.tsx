@@ -79,12 +79,15 @@ export function Shell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/">
-            <span className="flex items-center cursor-pointer group">
+            <span className="flex items-center gap-2.5 cursor-pointer group">
               <img
                 src={`${BASE}logo.png`}
                 alt="G.G. Maidan"
                 className="h-10 w-auto object-contain group-hover:drop-shadow-[0_0_10px_rgba(139,92,246,0.6)] transition-all duration-300"
               />
+              <span className="font-display font-bold text-xl uppercase tracking-widest text-foreground">
+                G.G. Maidan
+              </span>
             </span>
           </Link>
 
