@@ -1,10 +1,10 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Trophy, Gamepad2, Users, Flame, LayoutDashboard, Radio, X } from "lucide-react";
+import { Trophy, Gamepad2, Users, Flame, LayoutDashboard, Radio, X, ThumbsUp, Share2 } from "lucide-react";
+import { useListAnnouncements } from "@workspace/api-client-react";
 
 const BASE = import.meta.env.BASE_URL;
-import { useListAnnouncements } from "@workspace/api-client-react";
 
 function NavLink({ href, icon: Icon, children, isActive }: { href: string, icon: any, children: ReactNode, isActive: boolean }) {
   return (
@@ -12,8 +12,8 @@ function NavLink({ href, icon: Icon, children, isActive }: { href: string, icon:
       <span
         className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-md font-display uppercase tracking-wider text-sm font-semibold transition-all duration-300 cursor-pointer",
-          isActive 
-            ? "bg-primary/10 text-primary border-b-2 border-primary shadow-[inset_0_-2px_10px_rgba(139,92,246,0.1)]" 
+          isActive
+            ? "bg-primary/10 text-primary border-b-2 border-primary shadow-[inset_0_-2px_10px_rgba(139,92,246,0.1)]"
             : "text-muted-foreground hover:text-foreground hover:bg-white/5"
         )}
       >
@@ -24,35 +24,119 @@ function NavLink({ href, icon: Icon, children, isActive }: { href: string, icon:
   );
 }
 
-const TYPE_STYLES: Record<string, string> = {
-  info:    'bg-blue-600/90',
-  warning: 'bg-yellow-600/90',
-  success: 'bg-emerald-600/90',
-  event:   'bg-primary/90',
+const TYPE_META: Record<string, { accent: string; badge: string; badgeText: string; icon: string }> = {
+  event:   { accent: 'border-violet-500/60',  badge: 'bg-violet-500/20 text-violet-300',  badgeText: '📣 Update',    icon: '📣' },
+  success: { accent: 'border-emerald-500/60', badge: 'bg-emerald-500/20 text-emerald-300', badgeText: '✅ Good News', icon: '✅' },
+  warning: { accent: 'border-yellow-500/60',  badge: 'bg-yellow-500/20 text-yellow-300',  badgeText: '⚠️ Alert',    icon: '⚠️' },
+  info:    { accent: 'border-blue-500/60',    badge: 'bg-blue-500/20 text-blue-300',      badgeText: 'ℹ️ Info',     icon: 'ℹ️' },
 };
 
-function AnnouncementBanner() {
+function timeAgo(iso: string) {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function AnnouncementPost() {
   const { data } = useListAnnouncements({ limit: 1 });
   const [dismissed, setDismissed] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const seenId = useRef<number | null>(null);
+
   const latest = data?.[0];
+
+  useEffect(() => {
+    if (!latest) return;
+    if (latest.id === seenId.current) return;
+    seenId.current = latest.id;
+    setDismissed(false);
+    setLiked(false);
+    // Small delay so it feels like it "arrives"
+    const t = setTimeout(() => setVisible(true), 300);
+    return () => clearTimeout(t);
+  }, [latest?.id]);
+
   if (!latest || dismissed) return null;
-  const bg = TYPE_STYLES[latest.type] ?? 'bg-primary/90';
+
+  const meta = TYPE_META[latest.type] ?? TYPE_META.info;
+
+  function dismiss() {
+    setVisible(false);
+    setTimeout(() => setDismissed(true), 350);
+  }
+
   return (
-    <div className={`${bg} backdrop-blur-sm text-white text-sm`}>
-      <div className="container mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+    <div
+      className={cn(
+        'fixed bottom-5 right-5 z-50 w-[340px] sm:w-[380px] transition-all duration-350 ease-out',
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'
+      )}
+      style={{ filter: 'drop-shadow(0 8px 32px rgba(0,0,0,0.55))' }}
+    >
+      {/* Card */}
+      <div className={cn(
+        'bg-[#1a1a2e] border rounded-2xl overflow-hidden',
+        meta.accent
+      )}>
+
+        {/* Header — like a FB post header */}
+        <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-white/5">
+          <div className="relative shrink-0">
+            <img
+              src={`${BASE}logo.png`}
+              alt="G.G. Maidan"
+              className="w-10 h-10 rounded-full object-cover border-2 border-white/10"
+            />
+            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-[#1a1a2e]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-white text-sm leading-tight">G.G. Maidan</p>
+            <p className="text-xs text-white/40 flex items-center gap-1 mt-0.5">
+              <span>{timeAgo(latest.createdAt)}</span>
+              <span>·</span>
+              <span>🌐</span>
+            </p>
+          </div>
+          <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full shrink-0', meta.badge)}>
+            {meta.badgeText}
           </span>
-          <span className="font-semibold shrink-0">{latest.title}</span>
+          <button onClick={dismiss} className="shrink-0 text-white/30 hover:text-white/70 transition-colors ml-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Post body */}
+        <div className="px-4 py-3">
+          <p className="font-bold text-white text-base leading-snug">{latest.title}</p>
           {latest.content && (
-            <span className="text-white/80 truncate hidden sm:block">— {latest.content}</span>
+            <p className="text-white/60 text-sm mt-1.5 leading-relaxed">{latest.content}</p>
           )}
         </div>
-        <button onClick={() => setDismissed(true)} className="shrink-0 text-white/70 hover:text-white transition-colors">
-          <X className="w-4 h-4" />
-        </button>
+
+        {/* Reaction bar — like Facebook */}
+        <div className="border-t border-white/5 flex">
+          <button
+            onClick={() => setLiked(l => !l)}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors',
+              liked ? 'text-primary' : 'text-white/40 hover:text-white/70 hover:bg-white/5'
+            )}
+          >
+            <ThumbsUp className={cn('w-4 h-4', liked && 'fill-primary')} />
+            {liked ? 'Liked' : 'Like'}
+          </button>
+          <div className="w-px bg-white/5" />
+          <button
+            onClick={dismiss}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors"
+          >
+            <Share2 className="w-4 h-4" />
+            Dismiss
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -72,8 +156,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/30">
-      {/* Announcement banner */}
-      <AnnouncementBanner />
+      {/* Announcement post popup */}
+      <AnnouncementPost />
 
       {/* Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">

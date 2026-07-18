@@ -186,7 +186,8 @@ router.get("/admin/games", async (_req, res) => {
 router.post("/admin/games", async (req, res) => {
   const { name, logoUrl, description } = req.body;
   if (!name) return void res.status(400).json({ error: "name required" });
-  const [row] = await db.insert(gamesTable).values({ name, logoUrl: logoUrl || null, description: description || null }).returning();
+  const slug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const [row] = await db.insert(gamesTable).values({ name, slug, logoUrl: logoUrl || null, description: description || null }).returning();
   return void res.status(201).json(row);
 });
 
