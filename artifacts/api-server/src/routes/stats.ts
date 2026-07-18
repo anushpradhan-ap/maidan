@@ -26,7 +26,7 @@ router.get("/stats/community", async (_req, res) => {
     totalPlayers,
     totalTeams,
     totalTournaments,
-    totalPrizeDistributed: "NPR 50,00,000+",
+    totalPrizeDistributed: "NPR 10,00,000",
     activeTournaments,
     countriesRepresented: 3,
   });
