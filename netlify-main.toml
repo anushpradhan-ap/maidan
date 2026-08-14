@@ -7,7 +7,7 @@
 
 [build]
   command = "pnpm install && pnpm --filter @workspace/gg-maidan run build"
-  publish = "artifacts/gg-maidan/dist"
+  publish = "artifacts/gg-maidan/dist/public"
 
 # Route all paths to index.html so the React router works
 [[redirects]]
