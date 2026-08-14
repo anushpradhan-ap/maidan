@@ -8,6 +8,13 @@
       "when": 1786722824185,
       "tag": "0000_lowly_cammi",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786722900000,
+      "tag": "0001_seed_news",
+      "breakpoints": false
     }
   ]
 }
