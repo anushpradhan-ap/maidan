@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Trophy, Newspaper, Handshake, X, ThumbsUp, Share2 } from "lucide-react";
+import { Trophy, Handshake, Newspaper, X, ThumbsUp, Share2 } from "lucide-react";
 import { useListAnnouncements } from "@workspace/api-client-react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -9,14 +9,12 @@ const BASE = import.meta.env.BASE_URL;
 function NavLink({ href, icon: Icon, children, isActive }: { href: string; icon: any; children: ReactNode; isActive: boolean }) {
   return (
     <Link href={href}>
-      <span
-        className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-md font-display uppercase tracking-wider text-sm font-semibold transition-all duration-300 cursor-pointer",
-          isActive
-            ? "bg-primary/10 text-primary border-b-2 border-primary shadow-[inset_0_-2px_10px_rgba(139,92,246,0.1)]"
-            : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-        )}
-      >
+      <span className={cn(
+        "flex items-center gap-2 px-4 py-2 rounded-md font-display uppercase tracking-wider text-sm font-semibold transition-all duration-300 cursor-pointer",
+        isActive
+          ? "bg-primary/10 text-primary border-b-2 border-primary"
+          : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+      )}>
         <Icon className="w-4 h-4" />
         {children}
       </span>
@@ -70,13 +68,10 @@ function AnnouncementPost() {
   }
 
   return (
-    <div
-      className={cn(
-        "fixed bottom-5 right-5 z-50 w-[340px] sm:w-[380px] transition-all duration-350 ease-out",
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8 pointer-events-none"
-      )}
-      style={{ filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.55))" }}
-    >
+    <div className={cn(
+      "fixed bottom-5 right-5 z-50 w-[340px] sm:w-[380px] transition-all duration-350 ease-out",
+      visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8 pointer-events-none"
+    )} style={{ filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.55))" }}>
       <div className={cn("bg-[#1a1a2e] border rounded-2xl overflow-hidden", meta.accent)}>
         <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-white/5">
           <div className="relative shrink-0">
@@ -114,9 +109,10 @@ export function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const links = [
+  const isNewsActive = location === "/" || location.startsWith("/news");
+
+  const navLinks = [
     { href: "/tournaments", label: "Events", icon: Trophy },
-    { href: "/news", label: "News", icon: Newspaper },
     { href: "/sponsors", label: "Sponsors", icon: Handshake },
   ];
 
@@ -125,18 +121,23 @@ export function Shell({ children }: { children: ReactNode }) {
       <AnnouncementPost />
 
       {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          {/* Logo → home (news) */}
           <Link href="/">
             <span className="flex items-center gap-2.5 cursor-pointer group">
               <img src={`${BASE}logo.png`} alt="G.G. Maidan" className="h-10 w-auto object-contain group-hover:drop-shadow-[0_0_10px_rgba(139,92,246,0.6)] transition-all duration-300" />
-              <span className="font-display font-bold text-xl uppercase tracking-widest text-foreground">G.G. Maidan</span>
+              <span className="font-display font-bold text-xl uppercase tracking-widest hidden sm:block">G.G. Maidan</span>
             </span>
           </Link>
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {links.map(link => (
+            {/* News = home */}
+            <NavLink href="/" icon={Newspaper} isActive={isNewsActive}>
+              News
+            </NavLink>
+            {navLinks.map(link => (
               <NavLink key={link.href} href={link.href} icon={link.icon} isActive={location.startsWith(link.href)}>
                 {link.label}
               </NavLink>
@@ -148,7 +149,9 @@ export function Shell({ children }: { children: ReactNode }) {
           {/* Mobile hamburger */}
           <button className="md:hidden text-muted-foreground hover:text-foreground p-2" onClick={() => setMobileOpen(o => !o)}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {mobileOpen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
+              {mobileOpen
+                ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
             </svg>
           </button>
         </div>
@@ -156,8 +159,13 @@ export function Shell({ children }: { children: ReactNode }) {
         {/* Mobile menu */}
         {mobileOpen && (
           <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-md px-4 py-4 space-y-1">
-            {links.map(link => (
-              <Link key={link.href} href={link.href}><span onClick={() => setMobileOpen(false)} className={cn("flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold cursor-pointer transition-colors", location.startsWith(link.href) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5")}><link.icon className="w-4 h-4" />{link.label}</span></Link>
+            <Link href="/"><span onClick={() => setMobileOpen(false)} className={cn("flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold cursor-pointer transition-colors", isNewsActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5")}><Newspaper className="w-4 h-4" />News</span></Link>
+            {navLinks.map(link => (
+              <Link key={link.href} href={link.href}>
+                <span onClick={() => setMobileOpen(false)} className={cn("flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold cursor-pointer transition-colors", location.startsWith(link.href) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5")}>
+                  <link.icon className="w-4 h-4" />{link.label}
+                </span>
+              </Link>
             ))}
             <Link href="/about"><span onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-white/5 cursor-pointer">About</span></Link>
             <Link href="/contact"><span onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-white/5 cursor-pointer">Contact</span></Link>
@@ -168,26 +176,26 @@ export function Shell({ children }: { children: ReactNode }) {
       <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 bg-card/30 mt-20">
+      <footer className="border-t border-white/5 bg-card/30 mt-16">
         <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="space-y-4 md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="space-y-4 md:col-span-1">
               <Link href="/"><span className="flex items-center cursor-pointer"><img src={`${BASE}logo.png`} alt="G.G. Maidan" className="h-9 w-auto object-contain" /></span></Link>
               <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">
-                Nepal's premier esports platform. Join tournaments, get the latest news, and be part of the growing esports community.
+                Nepal's premier esports platform — news, tournaments, and community all in one place.
               </p>
             </div>
             <div>
-              <h4 className="font-display font-bold text-lg uppercase tracking-wider mb-4">Platform</h4>
+              <h4 className="font-display font-bold text-sm uppercase tracking-wider mb-4 text-muted-foreground">Navigate</h4>
               <ul className="space-y-2">
+                <li><Link href="/"><span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer text-sm">Latest News</span></Link></li>
                 <li><Link href="/tournaments"><span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer text-sm">Events</span></Link></li>
-                <li><Link href="/news"><span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer text-sm">News & Updates</span></Link></li>
                 <li><Link href="/sponsors"><span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer text-sm">Sponsors</span></Link></li>
                 <li><Link href="/about"><span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer text-sm">About Us</span></Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-display font-bold text-lg uppercase tracking-wider mb-4">Connect</h4>
+              <h4 className="font-display font-bold text-sm uppercase tracking-wider mb-4 text-muted-foreground">Connect</h4>
               <ul className="space-y-2">
                 <li><Link href="/contact"><span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer text-sm">Contact Us</span></Link></li>
                 <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">Discord</a></li>
@@ -196,7 +204,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </ul>
             </div>
           </div>
-          <div className="border-t border-white/5 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-muted-foreground">
+          <div className="border-t border-white/5 mt-10 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} G.G. Maidan E-sports Pvt. Ltd. All rights reserved.</p>
             <div className="flex gap-4 mt-4 md:mt-0">
               <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
