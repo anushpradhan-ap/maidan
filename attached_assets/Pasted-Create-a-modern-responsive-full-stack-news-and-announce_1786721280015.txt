@@ -1,0 +1,45 @@
+Create a modern, responsive full-stack news and announcements website with two sections: an Admin Panel and a Client/Public Website.
+
+Core functionality:
+
+Admin Panel
+Secure admin login and logout.
+Dashboard showing total posts, published posts, drafts, and recent activity.
+Admin can create, edit, delete, preview, and publish news posts.
+Each post should include:
+Title
+Short summary
+Full description
+Category
+Featured image
+Author
+Publication date
+Status: Draft or Published
+“Breaking News” option
+Allow the admin to search and filter posts.
+Display a confirmation message before deleting a post.
+Client/Public Website
+Display all published posts automatically on the main page.
+Show the latest or breaking news in a prominent banner or popup.
+Each news card should display the featured image, title, summary, category, date, and a “Read More” button.
+Clicking “Read More” should open a complete news article page.
+Include search and category filters.
+Sort posts from newest to oldest.
+Draft posts must never appear on the public website.
+Newly published posts should appear immediately without manually updating the page.
+Design
+Use a clean, professional, modern news-website layout.
+Make the website fully responsive for mobile, tablet, and desktop.
+Include a navigation bar, breaking-news section, latest-news grid, and footer.
+Use readable typography, accessible colors, smooth animations, loading states, and clear success/error notifications.
+Avoid excessive popups. Breaking-news popups should be dismissible and should not repeatedly appear after being closed.
+Technical requirements
+Use a database to store administrators and news posts.
+Add authentication and protected admin routes.
+Validate and sanitize all form data.
+Support image upload with a preview.
+Use reusable components and organized, production-ready code.
+Include sample news posts for demonstration.
+Provide clear setup instructions and demo admin login credentials.
+
+Build the complete working application, including the frontend, backend, database structure, authentication, admin dashboard, public news pages, and responsive styling.
