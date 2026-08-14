@@ -30,7 +30,11 @@ router.get("/announcements", async (req, res) => {
 router.post("/announcements", async (req, res) => {
   const parsed = CreateAnnouncementBody.safeParse(req.body);
   if (!parsed.success) return void res.status(400).json({ error: "Invalid body" });
-  const [row] = await db.insert(announcementsTable).values(parsed.data).returning();
+  const insertData = {
+    ...parsed.data,
+    expiresAt: parsed.data.expiresAt ? new Date(parsed.data.expiresAt) : null,
+  };
+  const [row] = await db.insert(announcementsTable).values(insertData).returning();
   return void res.status(201).json({
     ...row,
     createdAt: row.createdAt.toISOString(),

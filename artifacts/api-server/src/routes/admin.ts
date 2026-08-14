@@ -88,7 +88,7 @@ router.post("/admin/tournaments", async (req, res) => {
   if (rules) values["rules"] = rules;
   if (bannerUrl) values["bannerUrl"] = bannerUrl;
 
-  const [row] = await db.insert(tournamentsTable).values(values as Parameters<typeof db.insert>[0]["values"] & object).returning();
+  const [row] = await db.insert(tournamentsTable).values(values as any).returning();
   return void res.status(201).json({ ...row, gameName });
 });
 
@@ -107,7 +107,7 @@ router.patch("/admin/tournaments/:id", async (req, res) => {
   if (Object.keys(update).length === 0)
     return void res.status(400).json({ error: "No fields to update" });
   const [row] = await db.update(tournamentsTable)
-    .set(update as Parameters<typeof db.update>[0]["set"] & object)
+    .set(update as any)
     .where(eq(tournamentsTable.id, id))
     .returning();
   if (!row) return void res.status(404).json({ error: "Not found" });
@@ -185,7 +185,7 @@ router.patch("/admin/news/:id", async (req, res) => {
   }
 
   const [row] = await db.update(newsTable)
-    .set(update as Parameters<typeof db.update>[0]["set"] & object)
+    .set(update as any)
     .where(eq(newsTable.id, id))
     .returning();
   if (!row) return void res.status(404).json({ error: "Not found" });

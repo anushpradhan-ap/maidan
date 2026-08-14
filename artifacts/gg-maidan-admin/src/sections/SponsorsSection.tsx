@@ -12,7 +12,7 @@ const TIER_COLORS: Record<string, string> = {
 
 export default function SponsorsSection() {
   const [sponsors, setSponsors] = useState<AdminSponsor[]>([]);
-  const [form, setForm] = useState({ name: '', tier: 'gold', logoUrl: '', website: '', description: '' });
+  const [form, setForm] = useState({ name: '', tier: 'gold', logoUrl: '', websiteUrl: '', description: '' });
   const [saving, setSaving] = useState(false); const [flash, setFlash] = useState('');
 
   const load = () => listAdminSponsors().then(setSponsors).catch(() => {});
@@ -21,8 +21,8 @@ export default function SponsorsSection() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
     try {
-      await createSponsor({ name: form.name, tier: form.tier, logoUrl: form.logoUrl || undefined, website: form.website || undefined, description: form.description || undefined });
-      setFlash('Sponsor added!'); setForm({ name: '', tier: 'gold', logoUrl: '', website: '', description: '' }); setTimeout(() => setFlash(''), 3000); load();
+      await createSponsor({ name: form.name, tier: form.tier, logoUrl: form.logoUrl || undefined, websiteUrl: form.websiteUrl || undefined, description: form.description || undefined });
+      setFlash('Sponsor added!'); setForm({ name: '', tier: 'gold', logoUrl: '', websiteUrl: '', description: '' }); setTimeout(() => setFlash(''), 3000); load();
     } catch (err: any) { setFlash('Error: ' + err.message); } finally { setSaving(false); }
   }
 
@@ -49,7 +49,7 @@ export default function SponsorsSection() {
           <div><label className="block text-xs text-muted-foreground mb-1.5 uppercase tracking-wide font-medium">Logo URL</label>
             <input value={form.logoUrl} onChange={e => setForm(p => ({...p, logoUrl: e.target.value}))} placeholder="https://…" className={inp} /></div>
           <div><label className="block text-xs text-muted-foreground mb-1.5 uppercase tracking-wide font-medium">Website</label>
-            <input value={form.website} onChange={e => setForm(p => ({...p, website: e.target.value}))} placeholder="https://razer.com" className={inp} /></div>
+            <input value={form.websiteUrl} onChange={e => setForm(p => ({...p, websiteUrl: e.target.value}))} placeholder="https://razer.com" className={inp} /></div>
           <div><label className="block text-xs text-muted-foreground mb-1.5 uppercase tracking-wide font-medium">Description</label>
             <textarea rows={2} value={form.description} onChange={e => setForm(p => ({...p, description: e.target.value}))} className={inp + ' resize-none'} /></div>
           {flash && <div className={`text-sm px-4 py-2.5 rounded-lg ${flash.startsWith('Error') ? 'bg-red-500/10 border border-red-500/30 text-red-400' : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'}`}>{flash}</div>}
@@ -70,7 +70,7 @@ export default function SponsorsSection() {
                 </div>
                 <button onClick={() => handleDelete(s)} className="shrink-0 text-muted-foreground/30 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 text-xl leading-none">×</button>
               </div>
-              {s.website && <a href={s.website} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block">{s.website}</a>}
+              {(s.websiteUrl ?? s.website) && <a href={s.websiteUrl ?? s.website ?? '#'} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block">{s.websiteUrl ?? s.website}</a>}
               {s.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{s.description}</p>}
             </div>
           ))}
