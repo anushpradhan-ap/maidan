@@ -1,39 +1,14 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import {
-  tournamentsTable,
-  gamesTable,
-  standingsTable,
-  teamsTable,
-  registrationsTable,
-  bracketsTable,
-  scheduleItemsTable,
-  insertTournamentSchema,
-  insertRegistrationSchema,
-} from "@workspace/db";
+import { tournamentsTable, gamesTable, eventRegistrationsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
-import {
-  ListTournamentsQueryParams,
-  CreateTournamentBody,
-  RegisterForTournamentBody,
-  GetTournamentParams,
-  RegisterForTournamentParams,
-  GetTournamentStandingsParams,
-} from "@workspace/api-zod";
 
 const router = Router();
 
 // List tournaments
 router.get("/tournaments", async (req, res) => {
-  const parsed = ListTournamentsQueryParams.safeParse(req.query);
-  if (!parsed.success) {
-    return void res.status(400).json({ error: "Invalid query params" });
-  }
-  const { status, gameId, limit = 20, offset = 0 } = parsed.data;
-
-  const conditions = [];
-  if (status) conditions.push(eq(tournamentsTable.status, status));
-  if (gameId != null) conditions.push(eq(tournamentsTable.gameId, gameId));
+  const status = req.query["status"] as string | undefined;
+  const conditions = status ? [eq(tournamentsTable.status, status)] : [];
 
   const rows = await db
     .select({
@@ -52,31 +27,15 @@ router.get("/tournaments", async (req, res) => {
     })
     .from(tournamentsTable)
     .leftJoin(gamesTable, eq(tournamentsTable.gameId, gamesTable.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .limit(limit)
-    .offset(offset);
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
 
   return void res.json(rows);
 });
 
-// Create tournament
-router.post("/tournaments", async (req, res) => {
-  const parsed = CreateTournamentBody.safeParse(req.body);
-  if (!parsed.success) {
-    return void res.status(400).json({ error: "Invalid body" });
-  }
-  const game = await db.select({ name: gamesTable.name }).from(gamesTable).where(eq(gamesTable.id, parsed.data.gameId)).limit(1);
-  if (!game.length) return void res.status(400).json({ error: "Game not found" });
-
-  const [row] = await db.insert(tournamentsTable).values(parsed.data).returning();
-  const result = { ...row, gameName: game[0].name };
-  return void res.status(201).json(result);
-});
-
 // Get tournament detail
 router.get("/tournaments/:id", async (req, res) => {
-  const parsed = GetTournamentParams.safeParse(req.params);
-  if (!parsed.success) return void res.status(400).json({ error: "Invalid id" });
+  const id = Number(req.params["id"]);
+  if (!id) return void res.status(400).json({ error: "Invalid id" });
 
   const [row] = await db
     .select({
@@ -96,67 +55,43 @@ router.get("/tournaments/:id", async (req, res) => {
     })
     .from(tournamentsTable)
     .leftJoin(gamesTable, eq(tournamentsTable.gameId, gamesTable.id))
-    .where(eq(tournamentsTable.id, parsed.data.id))
+    .where(eq(tournamentsTable.id, id))
     .limit(1);
 
   if (!row) return void res.status(404).json({ error: "Not found" });
-
-  const schedule = await db
-    .select()
-    .from(scheduleItemsTable)
-    .where(eq(scheduleItemsTable.tournamentId, parsed.data.id));
-
-  const brackets = await db
-    .select()
-    .from(bracketsTable)
-    .where(eq(bracketsTable.tournamentId, parsed.data.id));
-
-  return void res.json({ ...row, schedule, brackets });
+  return void res.json({ ...row, schedule: [], brackets: [] });
 });
 
-// Get tournament standings
-router.get("/tournaments/:id/standings", async (req, res) => {
-  const parsed = GetTournamentStandingsParams.safeParse(req.params);
-  if (!parsed.success) return void res.status(400).json({ error: "Invalid id" });
-
-  const rows = await db
-    .select({
-      rank: standingsTable.rank,
-      teamId: standingsTable.teamId,
-      teamName: teamsTable.name,
-      teamLogoUrl: teamsTable.logoUrl,
-      kills: standingsTable.kills,
-      points: standingsTable.points,
-      placement: standingsTable.placement,
-    })
-    .from(standingsTable)
-    .leftJoin(teamsTable, eq(standingsTable.teamId, teamsTable.id))
-    .where(eq(standingsTable.tournamentId, parsed.data.id))
-    .orderBy(standingsTable.rank);
-
-  return void res.json(rows);
-});
-
-// Register for tournament
+// Register for a tournament (person-based)
 router.post("/tournaments/:id/register", async (req, res) => {
-  const paramsParsed = RegisterForTournamentParams.safeParse(req.params);
-  if (!paramsParsed.success) return void res.status(400).json({ error: "Invalid id" });
+  const id = Number(req.params["id"]);
+  if (!id) return void res.status(400).json({ error: "Invalid id" });
 
-  const bodyParsed = RegisterForTournamentBody.safeParse(req.body);
-  if (!bodyParsed.success) return void res.status(400).json({ error: "Invalid body" });
+  const { fullName, email, phone, teamName, message } = req.body;
+  if (!fullName || !email) {
+    return void res.status(400).json({ error: "fullName and email are required" });
+  }
 
-  const [row] = await db
-    .insert(registrationsTable)
-    .values({ tournamentId: paramsParsed.data.id, teamId: bodyParsed.data.teamId })
-    .returning();
+  // Basic email validation
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return void res.status(400).json({ error: "Invalid email address" });
+  }
+
+  const [row] = await db.insert(eventRegistrationsTable).values({
+    tournamentId: id,
+    fullName: String(fullName).trim(),
+    email: String(email).trim().toLowerCase(),
+    phone: phone ? String(phone).trim() : null,
+    teamName: teamName ? String(teamName).trim() : null,
+    message: message ? String(message).trim() : null,
+  }).returning();
 
   // Increment registered teams count
-  await db
-    .update(tournamentsTable)
+  await db.update(tournamentsTable)
     .set({ registeredTeams: sql`${tournamentsTable.registeredTeams} + 1` })
-    .where(eq(tournamentsTable.id, paramsParsed.data.id));
+    .where(eq(tournamentsTable.id, id));
 
-  return void res.status(201).json({ ...row, registeredAt: row.registeredAt.toISOString() });
+  return void res.status(201).json({ ...row, createdAt: row.createdAt.toISOString() });
 });
 
 export default router;

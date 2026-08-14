@@ -13,3 +13,4 @@ export * from "./match_results";
 export * from "./badges";
 export * from "./brackets";
 export * from "./schedule_items";
+export * from "./event_registrations";

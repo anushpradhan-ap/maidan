@@ -8,20 +8,11 @@ import { Shell } from '@/components/layout/Shell';
 import Home from '@/pages/Home';
 import Tournaments from '@/pages/Tournaments';
 import TournamentDetail from '@/pages/TournamentDetail';
-import Games from '@/pages/Games';
-import Teams from '@/pages/Teams';
-import TeamDetail from '@/pages/TeamDetail';
-import Players from '@/pages/Players';
-import PlayerDetail from '@/pages/PlayerDetail';
-import Leaderboard from '@/pages/Leaderboard';
-import Live from '@/pages/Live';
 import News from '@/pages/News';
 import NewsDetail from '@/pages/NewsDetail';
-import Gallery from '@/pages/Gallery';
 import Sponsors from '@/pages/Sponsors';
 import About from '@/pages/About';
 import Contact from '@/pages/Contact';
-
 import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient({
@@ -43,16 +34,8 @@ function App() {
               <Route path="/" component={Home} />
               <Route path="/tournaments" component={Tournaments} />
               <Route path="/tournaments/:id" component={TournamentDetail} />
-              <Route path="/games" component={Games} />
-              <Route path="/teams" component={Teams} />
-              <Route path="/teams/:id" component={TeamDetail} />
-              <Route path="/players" component={Players} />
-              <Route path="/players/:id" component={PlayerDetail} />
-              <Route path="/leaderboard" component={Leaderboard} />
-              <Route path="/live" component={Live} />
               <Route path="/news" component={News} />
               <Route path="/news/:id" component={NewsDetail} />
-              <Route path="/gallery" component={Gallery} />
               <Route path="/sponsors" component={Sponsors} />
               <Route path="/about" component={About} />
               <Route path="/contact" component={Contact} />

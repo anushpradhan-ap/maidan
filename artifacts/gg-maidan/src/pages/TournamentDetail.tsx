@@ -1,14 +1,23 @@
 import { useState } from 'react';
 import { useRoute } from "wouter";
-import { useGetTournament, useGetTournamentStandings, useListTeams } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useGetTournament } from "@workspace/api-client-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trophy, Calendar, Users, Info, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Trophy, Calendar, Users, Info, CheckCircle2 } from "lucide-react";
+
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
+interface RegForm {
+  fullName: string;
+  email: string;
+  phone: string;
+  teamName: string;
+  message: string;
+}
+
+const EMPTY: RegForm = { fullName: '', email: '', phone: '', teamName: '', message: '' };
 
 export default function TournamentDetail() {
   const [, params] = useRoute("/tournaments/:id");
@@ -17,39 +26,35 @@ export default function TournamentDetail() {
   const { data: tournament, isLoading } = useGetTournament(id, {
     query: { enabled: !!id }
   });
-  const { data: standings } = useGetTournamentStandings(id, {
-    query: { enabled: !!id && tournament?.status !== 'upcoming' }
-  });
-  const { data: teams } = useListTeams({ gameId: tournament?.gameId } as any, {
-    query: { enabled: !!tournament }
-  });
 
   const [regOpen, setRegOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState('');
-  const [regLoading, setRegLoading] = useState(false);
-  const [regSuccess, setRegSuccess] = useState(false);
-  const [regError, setRegError] = useState('');
+  const [form, setForm] = useState<RegForm>({ ...EMPTY });
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
-  async function handleRegister() {
-    if (!selectedTeam || !id) return;
-    setRegLoading(true);
-    setRegError('');
+  const inp = 'w-full bg-background border border-input rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors';
+
+  function openReg() { setForm({ ...EMPTY }); setSuccess(false); setError(''); setRegOpen(true); }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true); setError('');
     try {
-      const apiBase = import.meta.env.VITE_API_URL ?? '';
-      const res = await fetch(`${apiBase}/api/tournaments/${id}/register`, {
+      const res = await fetch(`${API_BASE}/api/tournaments/${id}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teamId: Number(selectedTeam) }),
+        body: JSON.stringify(form),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Registration failed' }));
-        throw new Error(err.error || 'Registration failed');
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Registration failed');
       }
-      setRegSuccess(true);
+      setSuccess(true);
     } catch (e: any) {
-      setRegError(e.message);
+      setError(e.message);
     } finally {
-      setRegLoading(false);
+      setSubmitting(false);
     }
   }
 
@@ -57,18 +62,21 @@ export default function TournamentDetail() {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
         <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-muted-foreground">Loading tournament…</p>
+        <p className="text-muted-foreground">Loading…</p>
       </div>
     );
   }
 
   if (!tournament) {
-    return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Tournament not found</div>;
+    return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Tournament not found.</div>;
   }
+
+  const isFull = tournament.registeredTeams >= tournament.maxTeams;
+  const canRegister = tournament.status === 'upcoming' && !isFull;
 
   return (
     <div className="pb-20">
-      {/* Banner Header */}
+      {/* Banner */}
       <div className="relative h-[40vh] md:h-[50vh] w-full border-b border-white/10">
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-10" />
         {tournament.bannerUrl ? (
@@ -79,243 +87,149 @@ export default function TournamentDetail() {
         <div className="absolute bottom-0 left-0 w-full z-20 p-6 md:p-12">
           <div className="container mx-auto">
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <Badge className={tournament.status === 'live' ? 'bg-emerald-500 text-white' : tournament.status === 'completed' ? 'bg-gray-600' : 'bg-primary'}>
-                {tournament.status === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping mr-1.5" />}
+              <Badge className={tournament.status === 'live' ? 'bg-emerald-500 text-white live-glow' : tournament.status === 'completed' ? 'bg-gray-600 text-white' : 'bg-primary text-primary-foreground'}>
+                {tournament.status === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping mr-1.5 inline-block" />}
                 {tournament.status.toUpperCase()}
               </Badge>
-              <Badge variant="outline" className="backdrop-blur-md bg-black/20 border-white/20">{tournament.gameName}</Badge>
+              {tournament.gameName && (
+                <Badge variant="outline" className="backdrop-blur-md bg-black/20 border-white/20 text-white">{tournament.gameName}</Badge>
+              )}
             </div>
             <h1 className="text-4xl md:text-6xl font-display font-black uppercase tracking-tight mb-4 text-white drop-shadow-lg">
               {tournament.title}
             </h1>
             <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-gray-200">
               <span className="flex items-center gap-2"><Trophy className="w-4 h-4 text-primary" /> {tournament.prizePool}</span>
-              <span className="flex items-center gap-2"><Users className="w-4 h-4 text-secondary" /> {tournament.registeredTeams} / {tournament.maxTeams} Teams</span>
-              <span className="flex items-center gap-2"><Calendar className="w-4 h-4 text-emerald-400" /> {new Date(tournament.startDate).toLocaleDateString()}</span>
+              <span className="flex items-center gap-2"><Users className="w-4 h-4" /> {tournament.registeredTeams} / {tournament.maxTeams} Registered</span>
+              <span className="flex items-center gap-2"><Calendar className="w-4 h-4 text-emerald-400" /> {new Date(tournament.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Main content */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="w-full justify-start bg-card border border-white/5 h-12 p-1">
-                <TabsTrigger value="overview" className="font-display uppercase tracking-wider text-xs h-full">Overview</TabsTrigger>
-                <TabsTrigger value="standings" className="font-display uppercase tracking-wider text-xs h-full">Standings</TabsTrigger>
-                <TabsTrigger value="brackets" className="font-display uppercase tracking-wider text-xs h-full">Brackets</TabsTrigger>
-                <TabsTrigger value="rules" className="font-display uppercase tracking-wider text-xs h-full">Rules</TabsTrigger>
-              </TabsList>
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-6">
+            {tournament.description && (
+              <Card className="glass-card border-white/5">
+                <CardContent className="p-6">
+                  <h2 className="font-display font-bold text-xl uppercase mb-4 flex items-center gap-2"><Info className="w-5 h-5 text-primary" /> About</h2>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{tournament.description}</p>
+                </CardContent>
+              </Card>
+            )}
 
-              <TabsContent value="overview" className="space-y-6 pt-6">
-                {tournament.description && (
-                  <Card className="glass-card">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-lg"><Info className="w-5 h-5 text-primary" /> About Event</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{tournament.description}</CardContent>
-                  </Card>
-                )}
-                <h3 className="text-2xl font-display font-bold uppercase mt-8 mb-4">Schedule</h3>
-                <div className="space-y-3">
-                  {tournament.schedule?.map((item, idx) => (
-                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-card/50 border border-white/5 hover:bg-white/5 transition-colors">
-                      <div className="mb-2 sm:mb-0">
-                        <p className="font-display font-bold text-lg">{item.label}</p>
-                        {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
-                      </div>
-                      <div className="flex items-center gap-2 text-primary font-mono text-sm">
-                        <Clock className="w-4 h-4" /> {new Date(item.datetime).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
-                  {(!tournament.schedule || tournament.schedule.length === 0) && (
-                    <p className="text-muted-foreground italic">Schedule TBA</p>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="standings" className="pt-6">
-                <Card className="glass-card">
-                  <CardContent className="p-0">
-                    {standings && standings.length > 0 ? (
-                      <Table>
-                        <TableHeader className="bg-white/5">
-                          <TableRow className="border-white/10 hover:bg-transparent">
-                            <TableHead className="w-[80px] font-display uppercase text-xs">Rank</TableHead>
-                            <TableHead className="font-display uppercase text-xs">Team</TableHead>
-                            <TableHead className="text-right font-display uppercase text-xs">Kills</TableHead>
-                            <TableHead className="text-right font-display uppercase text-xs">Points</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {standings.map((s) => (
-                            <TableRow key={s.teamId} className="border-white/5 hover:bg-white/5">
-                              <TableCell className="font-mono text-muted-foreground">#{s.rank}</TableCell>
-                              <TableCell className="font-bold">{s.teamName}</TableCell>
-                              <TableCell className="text-right font-mono">{s.kills}</TableCell>
-                              <TableCell className="text-right font-mono text-primary font-bold">{s.points}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    ) : (
-                      <div className="p-8 text-center text-muted-foreground">Standings will be available once matches begin.</div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="brackets" className="pt-6">
-                {tournament.brackets && tournament.brackets.length > 0 ? (
-                  <div className="space-y-3">
-                    {tournament.brackets.map((b) => (
-                      <div key={b.id} className="flex items-center gap-4 p-4 glass-card rounded-xl">
-                        <span className="text-xs text-muted-foreground font-mono w-16">Round {b.round}</span>
-                        <div className={`flex-1 text-center font-bold ${b.winner === b.team1Name ? 'text-white' : 'text-muted-foreground'}`}>{b.team1Name}</div>
-                        <div className="text-center font-mono text-sm bg-card px-3 py-1 rounded-lg border border-white/10">
-                          <span className="text-white">{b.score1}</span>
-                          <span className="text-muted-foreground mx-1">—</span>
-                          <span className="text-white">{b.score2}</span>
-                        </div>
-                        <div className={`flex-1 text-center font-bold ${b.winner === b.team2Name ? 'text-white' : 'text-muted-foreground'}`}>{b.team2Name}</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center text-muted-foreground glass-card rounded-xl">Bracket will be published before the tournament begins.</div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="rules" className="pt-6">
-                <Card className="glass-card">
-                  <CardContent className="p-6 text-muted-foreground leading-relaxed">
-                    {tournament.rules ? (
-                      <pre className="whitespace-pre-wrap font-sans text-sm">{tournament.rules}</pre>
-                    ) : (
-                      <p>Standard G.G. Maidan competitive rules apply.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+            {(tournament as any).rules && (
+              <Card className="glass-card border-white/5">
+                <CardContent className="p-6">
+                  <h2 className="font-display font-bold text-xl uppercase mb-4">📋 Rules</h2>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{(tournament as any).rules}</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            <Card className="glass-card border-primary/20 shadow-[0_0_30px_rgba(139,92,246,0.1)]">
-              <CardContent className="p-6">
-                <h3 className="font-display font-bold uppercase text-xl mb-6 text-center">Registration</h3>
-                <div className="space-y-4 mb-6">
-                  <div className="flex justify-between border-b border-white/5 pb-2">
-                    <span className="text-muted-foreground">Status</span>
-                    <span className="font-bold text-white capitalize">{tournament.status}</span>
+          <div className="space-y-4">
+            {/* Registration CTA */}
+            <Card className="glass-card border-white/5">
+              <CardContent className="p-6 space-y-4">
+                <h3 className="font-display font-bold text-lg uppercase">Registration</h3>
+
+                {/* Slots bar */}
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-muted-foreground">Slots filled</span>
+                    <span className="font-mono font-bold">{tournament.registeredTeams} / {tournament.maxTeams}</span>
                   </div>
-                  <div className="flex justify-between border-b border-white/5 pb-2">
-                    <span className="text-muted-foreground">Slots</span>
-                    <span className="font-mono">{tournament.registeredTeams} / {tournament.maxTeams}</span>
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-700"
+                      style={{ width: `${Math.min(100, (tournament.registeredTeams / tournament.maxTeams) * 100)}%` }}
+                    />
                   </div>
-                  <div className="flex justify-between border-b border-white/5 pb-2">
-                    <span className="text-muted-foreground">Entry Fee</span>
-                    <span className="font-bold text-emerald-400">Free</span>
-                  </div>
+                  {isFull && <p className="text-xs text-red-400 mt-2 font-medium">All spots are filled.</p>}
                 </div>
-                {tournament.status === 'upcoming' ? (
-                  <Button
-                    className="w-full h-14 text-lg font-display uppercase tracking-widest font-bold bg-primary hover:bg-primary/90 shadow-[0_0_20px_rgba(139,92,246,0.4)]"
-                    disabled={tournament.registeredTeams >= tournament.maxTeams}
-                    onClick={() => { setRegOpen(true); setRegSuccess(false); setRegError(''); }}
-                  >
-                    {tournament.registeredTeams >= tournament.maxTeams ? 'Event Full' : 'Register Team'}
-                  </Button>
+
+                {tournament.status === 'completed' ? (
+                  <p className="text-muted-foreground text-sm text-center py-2">This tournament has ended.</p>
+                ) : tournament.status === 'live' ? (
+                  <p className="text-emerald-400 text-sm text-center font-semibold">🔴 Tournament is Live!</p>
+                ) : isFull ? (
+                  <Button disabled className="w-full opacity-50">Registration Closed</Button>
                 ) : (
-                  <Button variant="secondary" className="w-full h-14" disabled>
-                    {tournament.status === 'live' ? '🔴 Ongoing' : 'Registration Closed'}
+                  <Button onClick={openReg} className="w-full bg-primary hover:bg-primary/90 font-display uppercase tracking-wider font-bold shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] transition-all">
+                    Register Now
                   </Button>
                 )}
-                <p className="text-xs text-center text-muted-foreground mt-4 flex items-center justify-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> Must be team captain to register
-                </p>
               </CardContent>
             </Card>
 
-            <Card className="glass-card">
-              <CardHeader><CardTitle className="text-lg uppercase font-display">Prize Pool</CardTitle></CardHeader>
-              <CardContent>
-                <div className="text-4xl font-display font-black text-transparent bg-clip-text bg-gradient-to-br from-primary to-secondary mb-4 text-center">
-                  {tournament.prizePool}
-                </div>
-                <div className="space-y-2 text-sm">
-                  {[['1st Place','text-yellow-500','50%'],['2nd Place','text-slate-300','30%'],['3rd Place','text-orange-400','20%']].map(([label,color,pct]) => (
-                    <div key={label} className="flex justify-between p-2 bg-white/5 rounded">
-                      <span className={`font-bold ${color}`}>{label}</span>
-                      <span>{pct}</span>
-                    </div>
-                  ))}
-                </div>
+            {/* Details */}
+            <Card className="glass-card border-white/5">
+              <CardContent className="p-6">
+                <h3 className="font-display font-bold text-lg uppercase mb-4">Details</h3>
+                <dl className="space-y-3 text-sm">
+                  <div className="flex justify-between"><dt className="text-muted-foreground">Start Date</dt><dd className="font-medium">{new Date(tournament.startDate).toLocaleDateString()}</dd></div>
+                  {tournament.endDate && <div className="flex justify-between"><dt className="text-muted-foreground">End Date</dt><dd className="font-medium">{new Date(tournament.endDate).toLocaleDateString()}</dd></div>}
+                  <div className="flex justify-between"><dt className="text-muted-foreground">Prize Pool</dt><dd className="font-medium text-primary">{tournament.prizePool}</dd></div>
+                  {tournament.gameName && <div className="flex justify-between"><dt className="text-muted-foreground">Game</dt><dd className="font-medium">{tournament.gameName}</dd></div>}
+                  <div className="flex justify-between"><dt className="text-muted-foreground">Max Slots</dt><dd className="font-mono">{tournament.maxTeams}</dd></div>
+                </dl>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
 
-      {/* Registration Modal */}
-      <Dialog open={regOpen} onOpenChange={open => { setRegOpen(open); if (!open) { setRegSuccess(false); setRegError(''); setSelectedTeam(''); } }}>
-        <DialogContent className="bg-card border border-white/10 text-white max-w-md">
+      {/* Registration Dialog */}
+      <Dialog open={regOpen} onOpenChange={setRegOpen}>
+        <DialogContent className="max-w-md bg-card border-white/10">
           <DialogHeader>
-            <DialogTitle className="font-display uppercase text-xl">Register for {tournament.title}</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Select your team to claim a slot. Registration is first-come, first-served.
-            </DialogDescription>
+            <DialogTitle className="font-display font-bold uppercase text-lg">
+              Register for {tournament.title}
+            </DialogTitle>
           </DialogHeader>
 
-          {regSuccess ? (
-            <div className="flex flex-col items-center gap-4 py-6">
-              <CheckCircle2 className="w-16 h-16 text-emerald-400" />
-              <p className="font-display uppercase text-xl font-bold text-white">You're Registered!</p>
-              <p className="text-muted-foreground text-center text-sm">Your team has been registered. Good luck in the tournament!</p>
-              <Button className="w-full bg-primary" onClick={() => setRegOpen(false)}>Close</Button>
+          {success ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-4 text-center">
+              <CheckCircle2 className="w-14 h-14 text-emerald-400" />
+              <h3 className="text-xl font-bold font-display uppercase">You're In!</h3>
+              <p className="text-muted-foreground text-sm max-w-xs">Your registration has been submitted. We'll contact you at the provided email with next steps.</p>
+              <Button onClick={() => setRegOpen(false)} className="mt-2 w-full">Close</Button>
             </div>
           ) : (
-            <div className="space-y-4 pt-2">
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Select Your Team</label>
-                <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                  <SelectTrigger className="w-full bg-black/40 border-white/10 text-white">
-                    <SelectValue placeholder="Choose a team…" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-white/10">
-                    {teams?.filter(t => t.gameId === tournament.gameId).map(t => (
-                      <SelectItem key={t.id} value={String(t.id)} className="text-white hover:bg-white/10">
-                        [{t.tag}] {t.name}
-                      </SelectItem>
-                    ))}
-                    {(!teams || teams.filter(t => t.gameId === tournament.gameId).length === 0) && (
-                      <SelectItem value="_none" disabled>No teams found for this game</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                <label className="block text-xs text-muted-foreground mb-1.5 uppercase tracking-wide font-medium">Full Name *</label>
+                <input required value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} placeholder="Your name" className={inp} />
               </div>
-
-              {regError && (
-                <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
-                  <AlertCircle className="w-4 h-4 shrink-0" /> {regError}
-                </div>
-              )}
-
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5 uppercase tracking-wide font-medium">Email *</label>
+                <input required type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="you@example.com" className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5 uppercase tracking-wide font-medium">Phone</label>
+                <input type="tel" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+977 9800000000" className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5 uppercase tracking-wide font-medium">Team / In-game Name</label>
+                <input value={form.teamName} onChange={e => setForm(p => ({ ...p, teamName: e.target.value }))} placeholder="Team Alpha" className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5 uppercase tracking-wide font-medium">Message (optional)</label>
+                <textarea rows={3} value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} placeholder="Anything you'd like us to know…" className={inp + ' resize-none'} />
+              </div>
+              {error && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{error}</p>}
               <div className="flex gap-3 pt-2">
-                <Button
-                  className="flex-1 bg-primary hover:bg-primary/90 font-display uppercase tracking-wider"
-                  disabled={!selectedTeam || selectedTeam === '_none' || regLoading}
-                  onClick={handleRegister}
-                >
-                  {regLoading ? 'Registering…' : 'Confirm Registration'}
+                <Button type="submit" disabled={submitting} className="flex-1 bg-primary hover:bg-primary/90 font-display uppercase tracking-wider font-bold">
+                  {submitting ? 'Submitting…' : 'Submit Registration'}
                 </Button>
-                <Button variant="outline" className="border-white/10" onClick={() => setRegOpen(false)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setRegOpen(false)} className="border-white/10">Cancel</Button>
               </div>
-            </div>
+            </form>
           )}
         </DialogContent>
       </Dialog>

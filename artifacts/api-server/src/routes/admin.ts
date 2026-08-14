@@ -3,16 +3,12 @@ import { db } from "@workspace/db";
 import {
   tournamentsTable,
   gamesTable,
-  standingsTable,
-  teamsTable,
-  playersTable,
   newsTable,
   announcementsTable,
-  liveUpdatesTable,
-  galleryTable,
   sponsorsTable,
+  eventRegistrationsTable,
 } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 const router = Router();
 
@@ -58,6 +54,7 @@ router.get("/admin/tournaments", async (_req, res) => {
       currentZone: tournamentsTable.currentZone,
       streamUrl: tournamentsTable.streamUrl,
       description: tournamentsTable.description,
+      bannerUrl: tournamentsTable.bannerUrl,
     })
     .from(tournamentsTable)
     .leftJoin(gamesTable, eq(tournamentsTable.gameId, gamesTable.id))
@@ -66,24 +63,33 @@ router.get("/admin/tournaments", async (_req, res) => {
 });
 
 router.post("/admin/tournaments", async (req, res) => {
-  const { title, gameId, startDate, endDate, prizePool, maxTeams, totalRounds, description, rules } = req.body;
-  if (!title || !gameId || !startDate || !prizePool || !maxTeams) {
-    return void res.status(400).json({ error: "title, gameId, startDate, prizePool, maxTeams required" });
+  const { title, gameName, startDate, endDate, prizePool, maxTeams, totalRounds, description, rules, bannerUrl } = req.body;
+  if (!title || !gameName || !startDate || !prizePool || !maxTeams) {
+    return void res.status(400).json({ error: "title, gameName, startDate, prizePool, maxTeams required" });
   }
+
+  // Find or create the game by name
+  const existing = await db.select().from(gamesTable).where(eq(gamesTable.name, gameName)).limit(1);
+  let gameId: number;
+  if (existing.length > 0) {
+    gameId = existing[0].id;
+  } else {
+    const slug = String(gameName).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const [newGame] = await db.insert(gamesTable).values({ name: gameName, slug }).returning();
+    gameId = newGame.id;
+  }
+
   const values: Record<string, unknown> = {
-    title,
-    gameId: Number(gameId),
-    startDate,
-    prizePool,
-    maxTeams: Number(maxTeams),
-    status: "upcoming",
+    title, gameId, startDate, prizePool, maxTeams: Number(maxTeams), status: "upcoming",
   };
   if (endDate) values["endDate"] = endDate;
   if (totalRounds) values["totalRounds"] = Number(totalRounds);
   if (description) values["description"] = description;
   if (rules) values["rules"] = rules;
+  if (bannerUrl) values["bannerUrl"] = bannerUrl;
+
   const [row] = await db.insert(tournamentsTable).values(values as Parameters<typeof db.insert>[0]["values"] & object).returning();
-  return void res.status(201).json(row);
+  return void res.status(201).json({ ...row, gameName });
 });
 
 router.patch("/admin/tournaments/:id", async (req, res) => {
@@ -92,7 +98,7 @@ router.patch("/admin/tournaments/:id", async (req, res) => {
   const allowed = [
     "status", "currentRound", "totalRounds", "teamsAlive", "currentZone",
     "streamUrl", "title", "prizePool", "description", "rules", "startDate",
-    "endDate", "maxTeams", "gameId",
+    "endDate", "maxTeams", "bannerUrl",
   ] as const;
   const update: Record<string, unknown> = {};
   for (const key of allowed) {
@@ -111,206 +117,8 @@ router.patch("/admin/tournaments/:id", async (req, res) => {
 router.delete("/admin/tournaments/:id", async (req, res) => {
   const id = Number(req.params["id"]);
   if (!id) return void res.status(400).json({ error: "Invalid id" });
-  // Remove child records that reference this tournament first
-  await db.delete(liveUpdatesTable).where(eq(liveUpdatesTable.tournamentId, id));
-  await db.delete(standingsTable).where(eq(standingsTable.tournamentId, id));
+  // event_registrations cascade-delete automatically
   await db.delete(tournamentsTable).where(eq(tournamentsTable.id, id));
-  return void res.status(204).send();
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// STANDINGS
-// ══════════════════════════════════════════════════════════════════════════════
-
-router.post("/admin/standings", async (req, res) => {
-  const { tournamentId, teamId, rank, kills, points, placement } = req.body;
-  if (!tournamentId || !teamId)
-    return void res.status(400).json({ error: "tournamentId and teamId required" });
-  const existing = await db.select().from(standingsTable)
-    .where(eq(standingsTable.tournamentId, tournamentId))
-    .then((rows) => rows.find((r) => r.teamId === teamId));
-  let row;
-  if (existing) {
-    [row] = await db.update(standingsTable)
-      .set({ rank, kills, points, placement })
-      .where(eq(standingsTable.id, existing.id))
-      .returning();
-  } else {
-    [row] = await db.insert(standingsTable)
-      .values({ tournamentId, teamId, rank, kills, points, placement })
-      .returning();
-  }
-  return void res.status(200).json(row);
-});
-
-router.get("/admin/standings/:tournamentId", async (req, res) => {
-  const tournamentId = Number(req.params["tournamentId"]);
-  const rows = await db.select({
-    id: standingsTable.id,
-    rank: standingsTable.rank,
-    teamId: standingsTable.teamId,
-    teamName: teamsTable.name,
-    kills: standingsTable.kills,
-    points: standingsTable.points,
-    placement: standingsTable.placement,
-  })
-    .from(standingsTable)
-    .leftJoin(teamsTable, eq(standingsTable.teamId, teamsTable.id))
-    .where(eq(standingsTable.tournamentId, tournamentId))
-    .orderBy(standingsTable.rank);
-  return void res.json(rows);
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// LIVE UPDATES
-// ══════════════════════════════════════════════════════════════════════════════
-
-router.delete("/admin/live-updates/:id", async (req, res) => {
-  const id = Number(req.params["id"]);
-  if (!id) return void res.status(400).json({ error: "Invalid id" });
-  await db.delete(liveUpdatesTable).where(eq(liveUpdatesTable.id, id));
-  return void res.status(204).send();
-});
-
-router.delete("/admin/live-updates/tournament/:tournamentId", async (req, res) => {
-  const tournamentId = Number(req.params["tournamentId"]);
-  await db.delete(liveUpdatesTable).where(eq(liveUpdatesTable.tournamentId, tournamentId));
-  return void res.status(204).send();
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// GAMES
-// ══════════════════════════════════════════════════════════════════════════════
-
-router.get("/admin/games", async (_req, res) => {
-  const rows = await db.select().from(gamesTable).orderBy(gamesTable.name);
-  return void res.json(rows);
-});
-
-router.post("/admin/games", async (req, res) => {
-  const { name, logoUrl, description } = req.body;
-  if (!name) return void res.status(400).json({ error: "name required" });
-  const baseSlug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  // Ensure slug uniqueness by appending a suffix if needed
-  let slug = baseSlug;
-  const existing = await db.select({ slug: gamesTable.slug }).from(gamesTable);
-  const slugs = new Set(existing.map(r => r.slug));
-  if (slugs.has(slug)) {
-    let i = 2;
-    while (slugs.has(`${baseSlug}-${i}`)) i++;
-    slug = `${baseSlug}-${i}`;
-  }
-  const [row] = await db.insert(gamesTable).values({ name, slug, logoUrl: logoUrl || null, description: description || null }).returning();
-  return void res.status(201).json(row);
-});
-
-router.delete("/admin/games/:id", async (req, res) => {
-  const id = Number(req.params["id"]);
-  if (!id) return void res.status(400).json({ error: "Invalid id" });
-  // Delete in FK dependency order: players → standings → live updates → teams → tournaments → game
-  await db.delete(playersTable).where(eq(playersTable.gameId, id));
-  const teams = await db.select({ id: teamsTable.id }).from(teamsTable).where(eq(teamsTable.gameId, id));
-  for (const t of teams) {
-    await db.delete(teamsTable).where(eq(teamsTable.id, t.id));
-  }
-  const tours = await db.select({ id: tournamentsTable.id }).from(tournamentsTable).where(eq(tournamentsTable.gameId, id));
-  for (const t of tours) {
-    await db.delete(liveUpdatesTable).where(eq(liveUpdatesTable.tournamentId, t.id));
-    await db.delete(standingsTable).where(eq(standingsTable.tournamentId, t.id));
-    await db.delete(tournamentsTable).where(eq(tournamentsTable.id, t.id));
-  }
-  await db.delete(gamesTable).where(eq(gamesTable.id, id));
-  return void res.status(204).send();
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TEAMS
-// ══════════════════════════════════════════════════════════════════════════════
-
-router.get("/admin/teams", async (_req, res) => {
-  const rows = await db.select({
-    id: teamsTable.id,
-    name: teamsTable.name,
-    tag: teamsTable.tag,
-    gameId: teamsTable.gameId,
-    gameName: gamesTable.name,
-    logoUrl: teamsTable.logoUrl,
-    wins: teamsTable.wins,
-    losses: teamsTable.losses,
-    rank: teamsTable.rank,
-  })
-    .from(teamsTable)
-    .leftJoin(gamesTable, eq(teamsTable.gameId, gamesTable.id))
-    .orderBy(teamsTable.name);
-  return void res.json(rows);
-});
-
-router.post("/admin/teams", async (req, res) => {
-  const { name, tag, gameId, logoUrl, description } = req.body;
-  if (!name || !tag || !gameId) return void res.status(400).json({ error: "name, tag, gameId required" });
-  const [row] = await db.insert(teamsTable).values({
-    name, tag,
-    gameId: Number(gameId),
-    logoUrl: logoUrl || null,
-    description: description || null,
-  }).returning();
-  return void res.status(201).json(row);
-});
-
-router.delete("/admin/teams/:id", async (req, res) => {
-  const id = Number(req.params["id"]);
-  if (!id) return void res.status(400).json({ error: "Invalid id" });
-  // Unlink players from this team (keep players, just remove team assignment)
-  await db.update(playersTable).set({ teamId: null }).where(eq(playersTable.teamId, id));
-  await db.delete(teamsTable).where(eq(teamsTable.id, id));
-  return void res.status(204).send();
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// PLAYERS
-// ══════════════════════════════════════════════════════════════════════════════
-
-router.get("/admin/players", async (_req, res) => {
-  const rows = await db.select({
-    id: playersTable.id,
-    username: playersTable.username,
-    fullName: playersTable.fullName,
-    gameId: playersTable.gameId,
-    gameName: gamesTable.name,
-    teamId: playersTable.teamId,
-    teamName: teamsTable.name,
-    role: playersTable.role,
-    country: playersTable.country,
-    rank: playersTable.rank,
-    kills: playersTable.kills,
-    tournamentWins: playersTable.tournamentWins,
-  })
-    .from(playersTable)
-    .leftJoin(gamesTable, eq(playersTable.gameId, gamesTable.id))
-    .leftJoin(teamsTable, eq(playersTable.teamId, teamsTable.id))
-    .orderBy(playersTable.rank);
-  return void res.json(rows);
-});
-
-router.post("/admin/players", async (req, res) => {
-  const { username, fullName, gameId, teamId, role, country, bio, avatarUrl } = req.body;
-  if (!username || !gameId) return void res.status(400).json({ error: "username, gameId required" });
-  const [row] = await db.insert(playersTable).values({
-    username, fullName: fullName || null,
-    gameId: Number(gameId),
-    teamId: teamId ? Number(teamId) : null,
-    role: role || null,
-    country: country || null,
-    bio: bio || null,
-    avatarUrl: avatarUrl || null,
-  }).returning();
-  return void res.status(201).json(row);
-});
-
-router.delete("/admin/players/:id", async (req, res) => {
-  const id = Number(req.params["id"]);
-  if (!id) return void res.status(400).json({ error: "Invalid id" });
-  await db.delete(playersTable).where(eq(playersTable.id, id));
   return void res.status(204).send();
 });
 
@@ -319,53 +127,75 @@ router.delete("/admin/players/:id", async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 router.get("/admin/news", async (_req, res) => {
-  const rows = await db.select().from(newsTable).orderBy(desc(newsTable.publishedAt));
-  return void res.json(rows.map((r) => ({ ...r, publishedAt: r.publishedAt.toISOString(), tags: r.tags ?? [] })));
+  const rows = await db.select().from(newsTable).orderBy(desc(newsTable.createdAt));
+  return void res.json(rows.map(r => ({
+    ...r,
+    publishedAt: r.publishedAt.toISOString(),
+    createdAt: r.createdAt.toISOString(),
+    tags: r.tags ?? [],
+  })));
+});
+
+router.post("/admin/news", async (req, res) => {
+  const { title, slug, excerpt, content, category, coverUrl, author, tags, status, isBreaking, publishedAt } = req.body;
+  if (!title || !excerpt || !content || !author) {
+    return void res.status(400).json({ error: "title, excerpt, content, author required" });
+  }
+  const autoSlug = slug || String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const parsedTags = tags
+    ? (Array.isArray(tags) ? tags : String(tags).split(",").map((t: string) => t.trim()).filter(Boolean))
+    : null;
+
+  const [row] = await db.insert(newsTable).values({
+    title: String(title),
+    slug: autoSlug,
+    excerpt: String(excerpt),
+    content: String(content),
+    category: category || "gaming",
+    coverUrl: coverUrl || null,
+    author: String(author),
+    tags: parsedTags,
+    status: status || "published",
+    isBreaking: isBreaking === true || isBreaking === "true",
+    publishedAt: publishedAt ? new Date(publishedAt) : new Date(),
+  }).returning();
+
+  return void res.status(201).json({
+    ...row,
+    publishedAt: row.publishedAt.toISOString(),
+    createdAt: row.createdAt.toISOString(),
+    tags: row.tags ?? [],
+  });
+});
+
+router.patch("/admin/news/:id", async (req, res) => {
+  const id = Number(req.params["id"]);
+  if (!id) return void res.status(400).json({ error: "Invalid id" });
+
+  const allowed = ["title", "slug", "excerpt", "content", "category", "coverUrl", "author", "tags", "status", "isBreaking", "publishedAt"] as const;
+  const update: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) update[key] = req.body[key];
+  }
+  if (Object.keys(update).length === 0) return void res.status(400).json({ error: "No fields to update" });
+  if (update["publishedAt"]) update["publishedAt"] = new Date(update["publishedAt"] as string);
+  if (update["isBreaking"] !== undefined) update["isBreaking"] = update["isBreaking"] === true || update["isBreaking"] === "true";
+  if (update["tags"] && !Array.isArray(update["tags"])) {
+    update["tags"] = String(update["tags"]).split(",").map((t: string) => t.trim()).filter(Boolean);
+  }
+
+  const [row] = await db.update(newsTable)
+    .set(update as Parameters<typeof db.update>[0]["set"] & object)
+    .where(eq(newsTable.id, id))
+    .returning();
+  if (!row) return void res.status(404).json({ error: "Not found" });
+  return void res.json({ ...row, publishedAt: row.publishedAt.toISOString(), createdAt: row.createdAt.toISOString(), tags: row.tags ?? [] });
 });
 
 router.delete("/admin/news/:id", async (req, res) => {
   const id = Number(req.params["id"]);
   if (!id) return void res.status(400).json({ error: "Invalid id" });
   await db.delete(newsTable).where(eq(newsTable.id, id));
-  return void res.status(204).send();
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// GALLERY
-// ══════════════════════════════════════════════════════════════════════════════
-
-router.get("/admin/gallery", async (_req, res) => {
-  const rows = await db.select({
-    id: galleryTable.id,
-    title: galleryTable.title,
-    type: galleryTable.type,
-    url: galleryTable.url,
-    thumbnailUrl: galleryTable.thumbnailUrl,
-    tournamentId: galleryTable.tournamentId,
-    tournamentName: tournamentsTable.title,
-    uploadedAt: galleryTable.uploadedAt,
-  })
-    .from(galleryTable)
-    .leftJoin(tournamentsTable, eq(galleryTable.tournamentId, tournamentsTable.id))
-    .orderBy(desc(galleryTable.uploadedAt));
-  return void res.json(rows.map(r => ({ ...r, uploadedAt: r.uploadedAt.toISOString() })));
-});
-
-router.post("/admin/gallery", async (req, res) => {
-  const { title, type, url, thumbnailUrl, tournamentId } = req.body;
-  if (!title || !type || !url) return void res.status(400).json({ error: "title, type, url required" });
-  const [row] = await db.insert(galleryTable).values({
-    title, type, url,
-    thumbnailUrl: thumbnailUrl || null,
-    tournamentId: tournamentId ? Number(tournamentId) : null,
-  }).returning();
-  return void res.status(201).json({ ...row, uploadedAt: row.uploadedAt.toISOString(), tournamentName: null });
-});
-
-router.delete("/admin/gallery/:id", async (req, res) => {
-  const id = Number(req.params["id"]);
-  if (!id) return void res.status(400).json({ error: "Invalid id" });
-  await db.delete(galleryTable).where(eq(galleryTable.id, id));
   return void res.status(204).send();
 });
 
@@ -382,9 +212,8 @@ router.post("/admin/sponsors", async (req, res) => {
   const { name, logoUrl, websiteUrl, website, tier, description } = req.body;
   if (!name || !tier) return void res.status(400).json({ error: "name, tier required" });
   const [row] = await db.insert(sponsorsTable).values({
-    name,
-    tier,
-    logoUrl: logoUrl || "",          // NOT NULL in DB — empty string when no logo provided
+    name, tier,
+    logoUrl: logoUrl || "",
     websiteUrl: websiteUrl || website || null,
     description: description || null,
   }).returning();
@@ -404,11 +233,20 @@ router.delete("/admin/sponsors/:id", async (req, res) => {
 
 router.get("/admin/announcements", async (_req, res) => {
   const rows = await db.select().from(announcementsTable).orderBy(desc(announcementsTable.createdAt));
-  return void res.json(rows.map((r) => ({
+  return void res.json(rows.map(r => ({
     ...r,
     createdAt: r.createdAt.toISOString(),
     expiresAt: r.expiresAt?.toISOString() ?? null,
   })));
+});
+
+router.post("/announcements", async (req, res) => {
+  const { title, content, type } = req.body;
+  if (!title || !content) return void res.status(400).json({ error: "title, content required" });
+  const [row] = await db.insert(announcementsTable).values({
+    title, content, type: type || "info",
+  }).returning();
+  return void res.status(201).json({ ...row, createdAt: row.createdAt.toISOString(), expiresAt: null });
 });
 
 router.delete("/admin/announcements/:id", async (req, res) => {
@@ -416,6 +254,39 @@ router.delete("/admin/announcements/:id", async (req, res) => {
   if (!id) return void res.status(400).json({ error: "Invalid id" });
   await db.delete(announcementsTable).where(eq(announcementsTable.id, id));
   return void res.status(204).send();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// EVENT REGISTRATIONS (read-only for admin)
+// ══════════════════════════════════════════════════════════════════════════════
+
+router.get("/admin/registrations", async (_req, res) => {
+  const rows = await db
+    .select({
+      id: eventRegistrationsTable.id,
+      tournamentId: eventRegistrationsTable.tournamentId,
+      tournamentName: tournamentsTable.title,
+      fullName: eventRegistrationsTable.fullName,
+      email: eventRegistrationsTable.email,
+      phone: eventRegistrationsTable.phone,
+      teamName: eventRegistrationsTable.teamName,
+      message: eventRegistrationsTable.message,
+      createdAt: eventRegistrationsTable.createdAt,
+    })
+    .from(eventRegistrationsTable)
+    .leftJoin(tournamentsTable, eq(eventRegistrationsTable.tournamentId, tournamentsTable.id))
+    .orderBy(desc(eventRegistrationsTable.createdAt));
+  return void res.json(rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString() })));
+});
+
+router.get("/admin/registrations/:tournamentId", async (req, res) => {
+  const tournamentId = Number(req.params["tournamentId"]);
+  const rows = await db
+    .select()
+    .from(eventRegistrationsTable)
+    .where(eq(eventRegistrationsTable.tournamentId, tournamentId))
+    .orderBy(desc(eventRegistrationsTable.createdAt));
+  return void res.json(rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString() })));
 });
 
 export default router;
