@@ -42,7 +42,7 @@ function timeAgo(iso: string) {
 const DISMISSED_KEY = "ggm_dismissed_ann";
 
 function AnnouncementPost() {
-  const { data } = useListAnnouncements({ limit: 1 }, { query: { refetchInterval: 15_000 } });
+  const { data } = useListAnnouncements({ limit: 1 }, { query: { queryKey: [], refetchInterval: 15_000 } });
   const [dismissed, setDismissed] = useState(false);
   const [visible, setVisible] = useState(false);
   const [liked, setLiked] = useState(false);

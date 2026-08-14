@@ -24,7 +24,7 @@ export default function TournamentDetail() {
   const id = Number(params?.id);
 
   const { data: tournament, isLoading } = useGetTournament(id, {
-    query: { enabled: !!id }
+    query: { queryKey: [], enabled: !!id }
   });
 
   const [regOpen, setRegOpen] = useState(false);
